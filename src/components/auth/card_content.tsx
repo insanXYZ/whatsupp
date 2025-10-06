@@ -1,4 +1,3 @@
-import { Label } from "@radix-ui/react-label";
 import {
   CardContent,
   CardDescription,
@@ -7,33 +6,45 @@ import {
 } from "../ui/card";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import React, { FormEvent, FormEventHandler } from "react";
+import React from "react";
 import Link from "next/link";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "../ui/form";
+import { Control, UseFormReturn } from "react-hook-form";
 
 interface PropsCardHeader {
   title: string;
   description: string;
 }
 
-interface PropsLabelInput {
+interface PropsFormField {
   label: string;
+  control: Control<any>;
+  name: string;
   placeholder?: string;
-  type: string;
+  type?: string;
 }
 
 interface PropsButtonSubmit {
   children: string;
 }
 
-interface PropsCardForm {
-  children: React.ReactNode;
-  onSubmit: () => void;
-}
-
 interface PropsFooterForm {
   title: string;
   href: string;
   title_href: string;
+}
+
+interface PropsFormContent {
+  children: React.ReactNode;
+  onSubmit: (v: any) => void;
+  form: UseFormReturn<any>;
 }
 
 function AuthCardHeader({ title, description }: PropsCardHeader) {
@@ -45,17 +56,25 @@ function AuthCardHeader({ title, description }: PropsCardHeader) {
   );
 }
 
-function AuthLabelInput(props: PropsLabelInput) {
+function AuthFormField(props: PropsFormField) {
   return (
-    <div className="grid gap-3">
-      <Label htmlFor={props.label}>{props.label}</Label>
-      <Input
-        id={props.label}
-        type={props.type}
-        placeholder={props.placeholder}
-        required
-      />
-    </div>
+    <FormField
+      control={props.control}
+      name={props.name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{props.label}</FormLabel>
+          <FormControl>
+            <Input
+              type={props.type || "text"}
+              placeholder={props.placeholder}
+              {...field}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 }
 
@@ -75,4 +94,22 @@ function AuthFooterForm(props: PropsFooterForm) {
   );
 }
 
-export { AuthCardHeader, AuthLabelInput, AuthButtonSubmit, AuthFooterForm };
+function AuthFormContent(props: PropsFormContent) {
+  return (
+    <CardContent>
+      <Form {...props.form}>
+        <form onSubmit={props.form.handleSubmit(props.onSubmit)} noValidate>
+          <div className="grid gap-6">{props.children}</div>
+        </form>
+      </Form>
+    </CardContent>
+  );
+}
+
+export {
+  AuthCardHeader,
+  AuthFormField,
+  AuthButtonSubmit,
+  AuthFooterForm,
+  AuthFormContent,
+};

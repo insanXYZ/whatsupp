@@ -12,7 +12,7 @@ export default function Page() {
       <AuthFooterForm
         href="/register"
         title="Don`t have an account?"
-        title_href="Sign up"
+        title_href="Sign Up"
       />
     </>
   );
