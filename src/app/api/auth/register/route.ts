@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ResponseSchema } from "@/app/dto";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
+import { throws } from "assert";
 
 // register handler
 export async function POST(req: NextRequest) {
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     };
 
     return NextResponse.json(res, {
-      status: 400,
+      status: 500,
     });
   }
 }

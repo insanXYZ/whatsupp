@@ -1,15 +1,12 @@
 "use client";
 
-import z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  AuthButtonSubmit,
-  AuthFormContent,
-  AuthFormField,
-} from "../card_content";
-import { API } from "@/utils/axios";
+import { AuthFormContent, AuthFormField } from "../card_content";
 import { LoginRequest, LoginRequestSchema } from "@/app/dto";
+import { HttpMethod, Mutation } from "@/utils/tanstack";
+import { ButtonLoading } from "@/components/button_loading";
+import { useEffect } from "react";
 
 export default function LoginForm() {
   const form = useForm<LoginRequest>({
@@ -20,14 +17,21 @@ export default function LoginForm() {
     },
   });
 
-  const onSubmit = async (v: LoginRequest) => {
-    const res = await API.post("/auth/login", {
-      email: v.email,
-      password: v.password,
-    });
+  const { mutate, isPending, isSuccess, error, data } = Mutation(["login"]);
 
-    console.log(res.data);
+  const onSubmit = (v: LoginRequest) => {
+    mutate({
+      method: HttpMethod.POST,
+      body: v,
+      url: "/auth/login",
+    });
   };
+
+  useEffect(() => {
+    console.log("isSuccess ", isSuccess);
+    console.log("error ", error);
+    console.log("data ", data);
+  }, [isSuccess, error]);
 
   return (
     <AuthFormContent form={form} onSubmit={onSubmit}>
@@ -43,7 +47,7 @@ export default function LoginForm() {
         name="password"
         type="password"
       />
-      <AuthButtonSubmit>Login</AuthButtonSubmit>
+      <ButtonLoading loading={isPending}>Login</ButtonLoading>
     </AuthFormContent>
   );
 }

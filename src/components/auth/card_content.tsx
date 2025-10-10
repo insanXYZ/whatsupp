@@ -5,7 +5,6 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Input } from "../ui/input";
-import { Button } from "../ui/button";
 import React from "react";
 import Link from "next/link";
 import {
@@ -31,9 +30,7 @@ interface PropsFormField {
   type?: string;
 }
 
-interface PropsButtonSubmit {
-  children: string;
-}
+
 
 interface PropsFooterForm {
   title: string;
@@ -78,14 +75,6 @@ function AuthFormField(props: PropsFormField) {
   );
 }
 
-function AuthButtonSubmit({ children }: PropsButtonSubmit) {
-  return (
-    <Button type="submit" className="w-full">
-      {children}
-    </Button>
-  );
-}
-
 function AuthFooterForm(props: PropsFooterForm) {
   return (
     <div className="text-center text-sm">
@@ -96,6 +85,7 @@ function AuthFooterForm(props: PropsFooterForm) {
 
 function AuthFormContent(props: PropsFormContent) {
   return (
+
     <CardContent>
       <Form {...props.form}>
         <form onSubmit={props.form.handleSubmit(props.onSubmit)} noValidate>
@@ -109,7 +99,6 @@ function AuthFormContent(props: PropsFormContent) {
 export {
   AuthCardHeader,
   AuthFormField,
-  AuthButtonSubmit,
   AuthFooterForm,
   AuthFormContent,
 };

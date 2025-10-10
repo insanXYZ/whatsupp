@@ -3,12 +3,13 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  AuthButtonSubmit,
   AuthFormContent,
   AuthFormField,
 } from "../card_content";
 import { RegisterRequest, RegisterRequestSchema } from "@/app/dto";
-import { API } from "@/utils/axios";
+import { HttpMethod, Mutation } from "@/utils/tanstack";
+import { useEffect } from "react";
+import { ButtonLoading } from "@/components/button_loading";
 
 export default function RegisterForm() {
   const form = useForm<RegisterRequest>({
@@ -20,24 +21,23 @@ export default function RegisterForm() {
     },
   });
 
-  const onSubmit = async (v: RegisterRequest) => {
-    const data: RegisterRequest = {
-      name: v.name,
-      email: v.email,
-      password: v.password,
-    };
+  const {mutate , isPending , isSuccess, isError , error} = Mutation(["register"]);
 
-    try {
-      const res = await API.post("/auth/register", data, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      console.log(res);
-    } catch (error) {
-      console.log("error ", error);
-    }
+  const onSubmit = (v: RegisterRequest) => {
+    mutate({
+      url: "/auth/register",
+      body: v,
+      method: HttpMethod.POST
+    })
   };
+
+  useEffect(() => {
+
+    console.log("isSuccess",isSuccess)
+    console.log("isError",isError)
+    console.log("error",error)
+
+  },[isSuccess, isError , error])
 
   return (
     <AuthFormContent form={form} onSubmit={onSubmit}>
@@ -59,7 +59,7 @@ export default function RegisterForm() {
         name="password"
         type="password"
       />
-      <AuthButtonSubmit>Sign Up</AuthButtonSubmit>
+      <ButtonLoading loading={isPending}>Register</ButtonLoading>
     </AuthFormContent>
   );
 }
