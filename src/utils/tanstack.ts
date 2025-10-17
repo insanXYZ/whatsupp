@@ -1,5 +1,8 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { API } from "./axios";
+import { error } from "console";
+import { AxiosError } from "axios";
+import { ResponseSchema } from "@/app/dto";
 
 function Query(queryKey: any[], url: string) {
   useQuery({
@@ -14,25 +17,29 @@ function Query(queryKey: any[], url: string) {
 export enum HttpMethod {
   POST = "POST",
   PUT = "PUT",
-  DELETE = "DELETE"
+  DELETE = "DELETE",
 }
 
 interface Mutate {
-  url: string
-  body: any
-  method: HttpMethod
+  url: string;
+  body: any;
+  method: HttpMethod;
 }
 
-function Mutation(mutationKey: any[]) {
-  return useMutation({
+function Mutation<T = any>(mutationKey: any[]) {
+  return useMutation<
+    ResponseSchema<T>,
+    AxiosError<ResponseSchema, any>,
+    Mutate
+  >({
     mutationFn: async ({ url, body, method }: Mutate) => {
       const res = await API({
         url: url,
         data: body,
-        method: method
-      })
+        method: method,
+      });
 
-      return res.data
+      return res.data;
     },
     mutationKey,
   });

@@ -27,7 +27,6 @@ export async function POST(req: NextRequest) {
     }
 
     const user = users[0];
-
     const isCompared = await bcrypt.compare(
       loginRequest.password,
       user.password

@@ -13,6 +13,10 @@ export const LoginRequestSchema = z.object({
 
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 
+export interface LoginResponse {
+  access_token: string;
+}
+
 export const RegisterRequestSchema = z.object({
   email: z.email(),
   password: z.string().min(6),

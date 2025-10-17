@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@/style/globals.css";
 import QueryProvider from "@/providers/query_client";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -14,6 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <QueryProvider>
+      <Toaster/>
       <html lang="en">
         <body>{children}</body>
       </html>
