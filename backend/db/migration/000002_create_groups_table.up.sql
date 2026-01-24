@@ -1,0 +1,10 @@
+CREATE TYPE type_group AS ENUM ( 'GROUP', 'PERSONAL');
+
+CREATE TABLE IF NOT EXISTS groups (
+  id VARCHAR(100) NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  description VARCHAR(100) NOT NULL,
+  'type' type_group NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY(id)
+);
