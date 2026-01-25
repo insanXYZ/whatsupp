@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"whatsupp-backend/config"
 	"whatsupp-backend/controller"
 	"whatsupp-backend/repository"
@@ -46,7 +48,7 @@ func main() {
 	userController := controller.NewUserController(userService)
 
 	app := echo.New()
-	err = app.Start(":3030")
+	err = app.Start(fmt.Sprintf(":%s", os.Getenv("APP_PORT")))
 	if err != nil {
 		app.Logger.Error("failed to start server", "error", err)
 	}
