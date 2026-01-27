@@ -10,10 +10,10 @@ import (
 	"whatsupp-backend/websocket"
 
 	"github.com/joho/godotenv"
-	"github.com/labstack/echo/v5"
 )
 
 func main() {
+
 	err := godotenv.Load()
 	if err != nil {
 		panic(err.Error())
@@ -26,9 +26,10 @@ func main() {
 	}
 
 	validator := config.NewValidator()
+	app := config.NewEcho()
 
 	hub := websocket.NewHub()
-	hub.Run()
+	go hub.Run()
 
 	// init repository
 	groupMemberRepository := repository.NewGroupMessageRepository(gorm)
@@ -47,10 +48,17 @@ func main() {
 	chatController := controller.NewChatController(chatService)
 	userController := controller.NewUserController(userService)
 
-	app := echo.New()
+	SetRoute(&RouteConfig{
+		userController: userController,
+		chatController: chatController,
+		app:            app,
+	})
+
 	err = app.Start(fmt.Sprintf(":%s", os.Getenv("APP_PORT")))
 	if err != nil {
 		app.Logger.Error("failed to start server", "error", err)
 	}
+
+	app.Logger.Info(fmt.Sprintf("app start on %s", os.Getenv("APP_PORT")))
 
 }

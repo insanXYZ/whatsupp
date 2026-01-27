@@ -10,7 +10,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
 
@@ -67,7 +66,6 @@ func (u *UserService) HandleRegister(ctx context.Context, req *dto.RegisterReque
 	}
 
 	newUser := &entity.User{
-		ID:       ulid.Make().String(),
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: password,
@@ -83,7 +81,7 @@ func (u *UserService) HandleUpdateUser(ctx context.Context, req *dto.UpdateUserR
 		return err
 	}
 
-	if req.Email != claims["email"] && u.isUserExist(ctx, req.Email) {
+	if req.Email != claims["email"].(string) && u.isUserExist(ctx, req.Email) {
 		return errors.New("email has been used")
 	}
 
@@ -105,4 +103,10 @@ func (u *UserService) HandleUpdateUser(ctx context.Context, req *dto.UpdateUserR
 	}
 
 	return u.userRepository.Update(ctx, user)
+}
+
+func (u *UserService) HandleMe(ctx context.Context, claims jwt.MapClaims) (*entity.User, error) {
+	user := new(entity.User)
+	err := u.userRepository.TakeById(ctx, user, claims["id"].(string))
+	return user, err
 }

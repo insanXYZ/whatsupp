@@ -11,15 +11,18 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { RegisterDto } from "@/dto/auth-dto";
-import { Mutation } from "@/utils/tanstack";
+import { HttpMethod, Mutation } from "@/utils/tanstack";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import z from "zod";
 
 export default function RegisterPage() {
-  const { mutate, isPending } = Mutation(["register"], true);
+  const router = useRouter();
+  const { mutate, isPending, isSuccess } = Mutation(["register"], true);
 
   const defaultValues: z.infer<typeof RegisterDto> = {
     name: "",
@@ -32,7 +35,19 @@ export default function RegisterPage() {
     resolver: zodResolver(RegisterDto),
   });
 
-  const onSubmit = (data: z.infer<typeof RegisterDto>) => {};
+  const onSubmit = (data: z.infer<typeof RegisterDto>) => {
+    mutate({
+      body: data,
+      method: HttpMethod.POST,
+      url: "/register",
+    });
+  };
+
+  useEffect(() => {
+    if (isSuccess) {
+      router.push("/login");
+    }
+  }, [isSuccess]);
 
   return (
     <CardContent className="grid p-0 md:grid-cols-2">
@@ -100,7 +115,7 @@ export default function RegisterPage() {
             )}
           ></Controller>
           <Field>
-            <ButtonLoading isPending={isPending}>Login</ButtonLoading>
+            <ButtonLoading isPending={isPending}>Register</ButtonLoading>
           </Field>
           <FieldDescription className="text-center">
             have account? <Link href="/login">Login</Link>

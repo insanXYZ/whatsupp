@@ -11,15 +11,18 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { LoginDto } from "@/dto/auth-dto";
-import { Mutation } from "@/utils/tanstack";
+import { HttpMethod, Mutation } from "@/utils/tanstack";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import z from "zod";
 
 export default function LoginPage() {
-  const { mutate, isPending } = Mutation(["login"], true);
+  const router = useRouter();
+  const { mutate, isPending, isSuccess } = Mutation(["login"], true);
 
   const defaultValues: z.infer<typeof LoginDto> = {
     email: "",
@@ -31,7 +34,19 @@ export default function LoginPage() {
     resolver: zodResolver(LoginDto),
   });
 
-  const onSubmit = (data: z.infer<typeof LoginDto>) => {};
+  const onSubmit = (data: z.infer<typeof LoginDto>) => {
+    mutate({
+      body: data,
+      method: HttpMethod.POST,
+      url: "/login",
+    });
+  };
+
+  useEffect(() => {
+    if (isSuccess) {
+      router.push("/");
+    }
+  }, [isSuccess]);
 
   return (
     <CardContent className="grid p-0 md:grid-cols-2">

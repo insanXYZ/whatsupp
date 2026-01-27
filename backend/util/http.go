@@ -1,6 +1,7 @@
 package util
 
 import (
+	"net/http"
 	"whatsupp-backend/dto"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,7 +14,7 @@ func GetClaims(c *echo.Context) jwt.MapClaims {
 
 func ResponseOk(c *echo.Context, message string, data any, statusCode ...int) error {
 	if len(statusCode) == 0 {
-		statusCode = append(statusCode, 200)
+		statusCode = append(statusCode, http.StatusOK)
 	}
 
 	response := dto.Response{
@@ -26,7 +27,7 @@ func ResponseOk(c *echo.Context, message string, data any, statusCode ...int) er
 
 func ResponseErr(c *echo.Context, message string, err any, statusCode ...int) error {
 	if len(statusCode) == 0 {
-		statusCode = append(statusCode, 400)
+		statusCode = append(statusCode, http.StatusBadRequest)
 	}
 
 	response := dto.Response{
@@ -35,4 +36,13 @@ func ResponseErr(c *echo.Context, message string, err any, statusCode ...int) er
 	}
 
 	return c.JSON(statusCode[0], response)
+}
+
+func ResponseErrInternal(c *echo.Context, err any) error {
+	response := dto.Response{
+		Message: "Internal Server Error",
+		Error:   err,
+	}
+
+	return c.JSON(http.StatusInternalServerError, response)
 }

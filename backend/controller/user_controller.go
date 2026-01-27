@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 	"whatsupp-backend/dto"
+	"whatsupp-backend/dto/converter"
+	"whatsupp-backend/dto/message"
 	"whatsupp-backend/service"
 	"whatsupp-backend/util"
 
@@ -26,12 +28,12 @@ func (u *UserController) Login(c *echo.Context) error {
 	req := new(dto.LoginRequest)
 	err := c.Bind(req)
 	if err != nil {
-		return err
+		return util.ResponseErr(c, message.ERR_BIND_REQ, err)
 	}
 
 	user, err := u.userService.HandleLogin(ctx, req)
 	if err != nil {
-		return err
+		return util.ResponseErr(c, message.ERR_LOGIN, err)
 	}
 
 	accToken, err := util.GenerateJWT(jwt.MapClaims{
@@ -41,18 +43,16 @@ func (u *UserController) Login(c *echo.Context) error {
 	})
 
 	if err != nil {
-		return err
+		return util.ResponseErrInternal(c, err)
 	}
 
-	cookies := new(http.Cookie)
-	cookies.Name = "X-ACC-TOKEN"
-	cookies.Value = accToken
-	cookies.HttpOnly = true
-	cookies.Path = "/"
-	cookies.Secure = true
+	cookie := new(http.Cookie)
+	cookie.Name = "X-ACC-TOKEN"
+	cookie.Value = accToken
+	cookie.Path = "/"
 
-	c.SetCookie(cookies)
-	return c.JSON(200, "sukses login")
+	c.SetCookie(cookie)
+	return util.ResponseOk(c, message.SUCCESS_LOGIN, nil)
 }
 
 func (u *UserController) Register(c *echo.Context) error {
@@ -60,26 +60,43 @@ func (u *UserController) Register(c *echo.Context) error {
 	req := new(dto.RegisterRequest)
 	err := c.Bind(req)
 	if err != nil {
-		return err
+		return util.ResponseErr(c, message.ERR_BIND_REQ, err)
 	}
 
-	return u.userService.HandleRegister(ctx, req)
+	err = u.userService.HandleRegister(ctx, req)
+
+	if err != nil {
+		return util.ResponseErr(c, message.ERR_REGISTER, err)
+	}
+
+	return util.ResponseOk(c, message.SUCCESS_REGISTER, nil)
 }
 
-func (u *UserController) UpdateUser(c *echo.Context) error {
+func (u *UserController) UpdateMe(c *echo.Context) error {
 	ctx := c.Request().Context()
 	req := new(dto.UpdateUserRequest)
 	err := c.Bind(req)
 	if err != nil {
-		return err
+		return util.ResponseErr(c, message.ERR_BIND_REQ, err)
 	}
 
 	claims := util.GetClaims(c)
 
 	err = u.userService.HandleUpdateUser(ctx, req, claims)
 	if err != nil {
-		return err
+		return util.ResponseErr(c, message.ERR_UPDATE_ME, err)
 	}
 
-	return c.JSON(200, "sukses update user")
+	return util.ResponseOk(c, message.SUCCESS_UPDATE_ME, nil)
+}
+
+func (u *UserController) Me(c *echo.Context) error {
+	ctx := c.Request().Context()
+	claims := util.GetClaims(c)
+	user, err := u.userService.HandleMe(ctx, claims)
+	if err != nil {
+		return util.ResponseErr(c, message.ERR_GET_ME, err)
+	}
+
+	return util.ResponseOk(c, message.SUCCESS_GET_ME, converter.UserEntityToDto(user))
 }
