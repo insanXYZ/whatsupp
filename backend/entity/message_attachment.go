@@ -3,7 +3,7 @@ package entity
 import "time"
 
 type MessageAttachment struct {
-	ID        string    `gorm:"column:id;primaryKey"`
+	ID        int       `gorm:"column:id;primaryKey,autoIncrement"`
 	MessageID string    `gorm:"column:message_id"`
 	FileURL   string    `gorm:"column:file_url"`
 	FileType  string    `gorm:"column:file_type"`

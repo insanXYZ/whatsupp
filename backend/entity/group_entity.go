@@ -22,7 +22,7 @@ func (tg typeGroup) Value() (driver.Value, error) {
 }
 
 type Group struct {
-	ID          string    `gorm:"column:id;primaryKey"`
+	ID          int       `gorm:"column:id;primaryKey,autoIncrement"`
 	Name        string    `gorm:"column:name"`
 	Description string    `gorm:"column:description"`
 	GroupType   typeGroup `gorm:"column:type;type:type_group"`

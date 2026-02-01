@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS messages (
-  id INT NOT NULL,
+  id SERIAL NOT NULL,
   member_id INT NOT NULL,
   message TEXT,
   created_at TIMESTAMPTZ NOT NULL,

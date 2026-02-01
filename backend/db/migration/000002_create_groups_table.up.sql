@@ -1,7 +1,12 @@
-CREATE TYPE type_group AS ENUM ( 'GROUP', 'PERSONAL');
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'type_group') THEN
+      CREATE TYPE type_group AS ENUM ( 'GROUP', 'PERSONAL');
+    END IF;
+END$$;
 
 CREATE TABLE IF NOT EXISTS groups (
-  id INT NOT NULL,
+  id SERIAL NOT NULL,
   name VARCHAR(100) NOT NULL,
   description VARCHAR(100) NOT NULL,
   type type_group NOT NULL,

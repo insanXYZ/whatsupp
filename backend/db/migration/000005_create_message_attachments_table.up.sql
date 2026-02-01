@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS message_attachments (
-  id INT NOT NULL,
+  id SERIAL NOT NULL,
   message_id INT NOT NULL,
   file_url TEXT NOT NULL,
   file_type VARCHAR(15) NOT NULL,

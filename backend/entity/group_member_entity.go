@@ -22,7 +22,7 @@ func (tg typeGroupMember) Value() (driver.Value, error) {
 }
 
 type GroupMember struct {
-	ID       string          `gorm:"column:id;primaryKey"`
+	ID       int             `gorm:"column:id;primaryKey,autoIncrement"`
 	GroupID  string          `gorm:"column:group_id"`
 	UserID   string          `gorm:"column:user_id"`
 	Role     typeGroupMember `gorm:"column:role;type:role_group_member"`
@@ -32,5 +32,5 @@ type GroupMember struct {
 }
 
 func (GroupMember) TableName() string {
-	return "group_members"
+	return "members"
 }

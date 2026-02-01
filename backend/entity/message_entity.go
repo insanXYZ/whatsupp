@@ -3,7 +3,7 @@ package entity
 import "time"
 
 type Message struct {
-	ID        string    `gorm:"column:id;primaryKey"`
+	ID        int       `gorm:"column:id;primaryKey,autoIncrement"`
 	GroupID   string    `gorm:"column:group_id"`
 	SenderID  string    `gorm:"column:sender_id"`
 	Message   string    `gorm:"column:message"`
