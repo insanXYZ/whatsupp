@@ -4,10 +4,8 @@ import "time"
 
 type Message struct {
 	ID        int       `gorm:"column:id;primaryKey,autoIncrement"`
-	GroupID   string    `gorm:"column:group_id"`
-	SenderID  string    `gorm:"column:sender_id"`
+	MemberID  int       `gorm:"column:member_id"`
 	Message   string    `gorm:"column:message"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
-	Group     *Group    `gorm:"foreignKey:group_id;references:id"`
-	User      *User     `gorm:"foreignKey:sender_id;references:id"`
+	Member    *Member   `gorm:"foreignKey:member_id;references:id"`
 }

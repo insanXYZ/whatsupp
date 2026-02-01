@@ -1,17 +1,6 @@
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/chat/sidebar";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import {
-  SidebarInset,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 export default function Page() {
@@ -24,7 +13,7 @@ export default function Page() {
       }
     >
       <AppSidebar />
-      <SidebarInset>
+      {/* <SidebarInset>
         <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4">
           <SidebarTrigger className="-ml-1" />
           <Separator
@@ -51,7 +40,7 @@ export default function Page() {
             />
           ))}
         </div>
-      </SidebarInset>
+      </SidebarInset> */}
     </SidebarProvider>
   );
 }

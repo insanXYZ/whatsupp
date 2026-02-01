@@ -12,7 +12,7 @@ import (
 type ChatService struct {
 	validator                   *validator.Validate
 	groupRepository             *repository.GroupRepository
-	groupMemberRepository       *repository.GroupMemberRepository
+	memberRepository            *repository.MemberRepository
 	messageRepository           *repository.MessageRepository
 	messageAttachmentRepository *repository.MessageAttachmentRepository
 	hub                         *websocket.Hub
@@ -20,7 +20,7 @@ type ChatService struct {
 
 func NewChatService(
 	groupRepository *repository.GroupRepository,
-	groupMemberRepository *repository.GroupMemberRepository,
+	memberRepository *repository.MemberRepository,
 	messageRepository *repository.MessageRepository,
 	messageAttachmentRepository *repository.MessageAttachmentRepository,
 	validator *validator.Validate,
@@ -30,7 +30,7 @@ func NewChatService(
 		hub:                         hub,
 		validator:                   validator,
 		groupRepository:             groupRepository,
-		groupMemberRepository:       groupMemberRepository,
+		memberRepository:            memberRepository,
 		messageRepository:           messageRepository,
 		messageAttachmentRepository: messageAttachmentRepository,
 	}
@@ -50,7 +50,7 @@ func (cs *ChatService) HandleUpgradeWs(ctx context.Context, w http.ResponseWrite
 
 	client.Hub.Register(client)
 
-	go client.WritePump()
+	go client.ReadPump()
 	go client.WritePump()
 
 	return nil
