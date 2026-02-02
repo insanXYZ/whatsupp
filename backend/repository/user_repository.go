@@ -23,6 +23,6 @@ func (u *UserRepository) TakeByEmail(ctx context.Context, email string, dst *ent
 	return u.DB.WithContext(ctx).Take(dst, "email = ?", email).Error
 }
 
-func (u *UserRepository) TakeByName(ctx context.Context, name string, dst *entity.User) error {
-	return u.DB.WithContext(ctx).Take(dst, "name = ?", name).Error
+func (u *UserRepository) FindByName(ctx context.Context, name string, dst *[]entity.User) error {
+	return u.DB.WithContext(ctx).Where("name LIKE ?", name).Find(dst).Error
 }

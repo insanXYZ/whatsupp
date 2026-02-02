@@ -4,6 +4,7 @@ type User struct {
 	ID    int    `json:"id,omitempty"`
 	Name  string `json:"name,omitempty"`
 	Email string `json:"email,omitempty"`
+	Image string `json:"image,omitempty"`
 }
 
 type LoginRequest struct {
@@ -21,4 +22,8 @@ type UpdateUserRequest struct {
 	Name     string `json:"name" validate:"omitempty,gte=3"`
 	Email    string `json:"email" validate:"omitempty,email"`
 	Password string `json:"password" validate:"omitempty,gte=8"`
+}
+
+type ListUsersRequest struct {
+	Name string `query:"name"`
 }

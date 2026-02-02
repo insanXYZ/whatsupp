@@ -7,5 +7,6 @@ type User struct {
 	Name      string    `gorm:"column:name"`
 	Email     string    `gorm:"column:email"`
 	Password  string    `gorm:"column:password"`
+	Image     string    `gorm:"column:image"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
 }

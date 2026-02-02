@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"whatsupp-backend/dto"
 	"whatsupp-backend/entity"
 	"whatsupp-backend/repository"
@@ -69,6 +70,7 @@ func (u *UserService) HandleRegister(ctx context.Context, req *dto.RegisterReque
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: password,
+		Image:    "https://sinorgelngxsrhvszanh.supabase.co/storage/v1/object/public/whatsupp-storage/profile.png",
 	}
 
 	return u.userRepository.Create(ctx, newUser)
@@ -109,4 +111,12 @@ func (u *UserService) HandleMe(ctx context.Context, claims jwt.MapClaims) (*enti
 	user := new(entity.User)
 	err := u.userRepository.TakeById(ctx, user, claims["id"].(string))
 	return user, err
+}
+
+func (u *UserService) HandleLists(ctx context.Context, req *dto.ListUsersRequest) ([]entity.User, error) {
+	nameFilter := fmt.Sprintf("%%%s%%", req.Name)
+	var users []entity.User
+
+	err := u.userRepository.FindByName(ctx, nameFilter, &users)
+	return users, err
 }
