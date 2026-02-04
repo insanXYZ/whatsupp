@@ -13,6 +13,11 @@ type MessageWS struct {
 	Data  any   `json:"data,omitempty"`
 }
 
+type BroadcastMessageWS struct {
+	*MessageWS
+	ClientID int
+}
+
 type SyncMessageWS struct {
 	Success bool
 }

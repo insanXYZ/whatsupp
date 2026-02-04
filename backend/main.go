@@ -27,12 +27,18 @@ func main() {
 
 	validator := config.NewValidator()
 	app := config.NewEcho()
+	clientStorage, err := config.NewSupabaseStorageClient()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// int hub ws
 
 	hub := websocket.NewHub()
 	go hub.Run()
 
 	// init repository
-	groupMemberRepository := repository.NewGroupMessageRepository(gorm)
+	memberRepository := repository.NewMemberRepository(gorm)
 	groupRepository := repository.NewGroupRepository(gorm)
 	messageAttachmentRepository := repository.NewMessageAttachmentRepository(gorm)
 	messageRepository := repository.NewMessageRepository(gorm)
@@ -40,7 +46,7 @@ func main() {
 
 	// init service
 
-	chatService := service.NewChatService(groupRepository, groupMemberRepository, messageRepository, messageAttachmentRepository, validator, hub)
+	chatService := service.NewChatService(groupRepository, memberRepository, messageRepository, messageAttachmentRepository, validator, hub, clientStorage)
 	userService := service.NewUserService(validator, userRepository)
 
 	// init controller

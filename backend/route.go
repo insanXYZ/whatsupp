@@ -26,5 +26,7 @@ func SetRoute(cfg *RouteConfig) {
 	user.PUT("", cfg.userController.UpdateMe)
 	user.GET("", cfg.userController.Me)
 
-	api.GET("/ws", cfg.chatController.UpgradeWs)
+	chat := api.Group("/chats")
+	chat.GET("ws", cfg.chatController.UpgradeWs)
+	chat.POST("/attachments")
 }

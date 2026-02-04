@@ -7,12 +7,12 @@ import (
 )
 
 type MemberRepository struct {
-	*repository[*entity.Group]
+	*repository[*entity.Member]
 }
 
 func NewMemberRepository(db *gorm.DB) *MemberRepository {
 	return &MemberRepository{
-		repository: &repository[*entity.Group]{
+		repository: &repository[*entity.Member]{
 			DB: db,
 		},
 	}

@@ -7,6 +7,7 @@ import (
 	"whatsupp-backend/dto"
 	"whatsupp-backend/entity"
 	"whatsupp-backend/repository"
+	"whatsupp-backend/storage"
 	"whatsupp-backend/util"
 
 	"github.com/go-playground/validator/v10"
@@ -70,7 +71,7 @@ func (u *UserService) HandleRegister(ctx context.Context, req *dto.RegisterReque
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: password,
-		Image:    "https://sinorgelngxsrhvszanh.supabase.co/storage/v1/object/public/whatsupp-storage/profile.png",
+		Image:    storage.DEFAULT_PROFILE_PICTURE_URL,
 	}
 
 	return u.userRepository.Create(ctx, newUser)
@@ -120,3 +121,5 @@ func (u *UserService) HandleLists(ctx context.Context, req *dto.ListUsersRequest
 	err := u.userRepository.FindByName(ctx, nameFilter, &users)
 	return users, err
 }
+
+func (u *UserService) handleSendMessage()

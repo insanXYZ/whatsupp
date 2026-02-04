@@ -5,9 +5,10 @@
 package websocket
 
 import (
-	"bytes"
+	"encoding/json"
 	"log"
 	"time"
+	"whatsupp-backend/dto"
 
 	"github.com/gorilla/websocket"
 )
@@ -38,6 +39,8 @@ var Upgrader = websocket.Upgrader{
 
 // Client is a middleman between the websocket connection and the Hub.
 type Client struct {
+	Id int
+
 	Hub *Hub
 
 	// The websocket connection.
@@ -61,15 +64,33 @@ func (c *Client) ReadPump() {
 	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.Conn.SetPongHandler(func(string) error { c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
-		_, message, err := c.Conn.ReadMessage()
+		mt, message, err := c.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
 			}
 			break
 		}
-		message = bytes.TrimSpace(bytes.ReplaceAll(message, newline, space))
-		c.Hub.broadcast <- message
+
+		switch mt {
+		case websocket.TextMessage:
+		case websocket.BinaryMessage:
+
+		}
+
+		req := new(dto.MessageWS)
+		err = json.Unmarshal(message, req)
+		if err != nil {
+			log.Printf("error unmarshaling message: %v", err)
+			break
+		}
+
+		broadcast := &dto.BroadcastMessageWS{
+			MessageWS: req,
+			ClientID:  c.Id,
+		}
+
+		c.Hub.broadcast <- broadcast
 	}
 }
 

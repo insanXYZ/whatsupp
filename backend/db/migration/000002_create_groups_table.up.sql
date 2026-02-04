@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS groups (
   name VARCHAR(100) NOT NULL,
   description VARCHAR(100) NOT NULL,
   type type_group NOT NULL,
+  image TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ,
   PRIMARY KEY(id)

@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"whatsupp-backend/dto"
+	"whatsupp-backend/dto/message"
 	"whatsupp-backend/service"
 	"whatsupp-backend/util"
 
@@ -19,11 +21,34 @@ func NewChatController(chatService *service.ChatService) *ChatController {
 
 func (cc *ChatController) UpgradeWs(c *echo.Context) error {
 	ctx := c.Request().Context()
+	claims := util.GetClaims(c)
 
-	err := cc.chatService.HandleUpgradeWs(ctx, c.Response(), c.Request())
+	err := cc.chatService.HandleUpgradeWs(ctx, claims, c.Response(), c.Request())
 	if err != nil {
 		return err
 	}
 
 	return util.ResponseOk(c, "upgrade connection success", nil)
+}
+
+func (cc *ChatController) UploadFileAttachments(c *echo.Context) error {
+	ctx := c.Request().Context()
+	messageId := c.FormValue("message_id")
+	form, err := c.MultipartForm()
+	if err != nil {
+		return util.ResponseErr(c, message.ERR_RETRIEVE_FILES, err)
+	}
+
+	files, ok := form.File[dto.MULTIPART_FORM_NAME]
+	if !ok {
+		return util.ResponseErr(c, message.ERR_RETRIEVE_FILES, nil)
+	}
+
+	err = cc.chatService.HandleUploadFileAttachments(&ctx, messageId, files)
+	if err != nil {
+		return util.ResponseErr(c, message.ERR_SEND_FILES, err)
+	}
+
+	return util.ResponseOk(c, message.SUCCESS_SEND_FILES, nil)
+
 }
