@@ -5,6 +5,7 @@
 package websocket
 
 import (
+	"log"
 	"whatsupp-backend/dto"
 )
 
@@ -52,43 +53,35 @@ func (h *Hub) Run() {
 			}
 		case message := <-h.broadcast:
 
-			if message.Event == dto.SEND_MESSAGE {
-
-				data, ok := message.Data.(dto.SendMessageWS)
-				if !ok {
-					// handle unavailable schema
-				}
-
-				clients, ok := h.groups[data.GroupID]
-				if !ok {
-					// handle missing group id
-				}
-
-				isMember := clients[message.ClientID]
-
-				if !isMember {
-					// handle is not member group
-				}
-
-				for clientID, _ := range clients {
-					client, ok := h.clients[clientID]
-					if ok {
-						client.Send <- 
-					}
-				}
-
+			clients, ok := h.groups[message.GroupID]
+			if !ok {
+				log.Println("error missing group id")
+				continue
 			}
 
+			isMember := clients[message.ClientID]
 
-			//
-			// for client := range h.clients {
-			// 	select {
-			// 	case client.Send <- message:
-			// 	default:
-			// 		close(client.Send)
-			// 		delete(h.clients, client)
-			// 	}
-			// }
+			if !isMember {
+				log.Println("error is not member")
+				continue
+			}
+
+			for clientID := range clients {
+				client, ok := h.clients[clientID]
+				if !ok {
+					continue
+				}
+
+				select {
+				case client.Send <- message:
+				default:
+					log.Println("dropping message, client too slow:", clientID)
+
+					close(client.Send)
+					delete(h.clients, clientID)
+				}
+			}
+
 		}
 	}
 }

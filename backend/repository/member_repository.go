@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"whatsupp-backend/entity"
 
 	"gorm.io/gorm"
@@ -16,4 +17,8 @@ func NewMemberRepository(db *gorm.DB) *MemberRepository {
 			DB: db,
 		},
 	}
+}
+
+func (m *MemberRepository) TakeByUserIdAndGroupId(ctx context.Context, userId, groupId int, dst *entity.Member) error {
+	return m.DB.WithContext(ctx).Where("user_id = ? AND group_id = ?", userId, groupId).Take(dst).Error
 }

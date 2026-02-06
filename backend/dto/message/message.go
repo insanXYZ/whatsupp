@@ -16,4 +16,7 @@ const (
 	ERR_LIST_USERS     = ""
 	ERR_RETRIEVE_FILES = ""
 	ERR_SEND_FILES     = ""
+
+	WS_SUCCESS_SYNC_CHAT = ""
+	WS_ERR_SYNC_CHAT     = ""
 )

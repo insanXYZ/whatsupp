@@ -37,6 +37,8 @@ var Upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+type HandlerSendMessage func(msg *dto.BroadcastMessageWS) (int, error)
+
 // Client is a middleman between the websocket connection and the Hub.
 type Client struct {
 	Id int
@@ -47,7 +49,9 @@ type Client struct {
 	Conn *websocket.Conn
 
 	// Buffered channel of outbound messages.
-	Send chan []byte
+	Send chan *dto.BroadcastMessageWS
+
+	HandlerSendMessage HandlerSendMessage
 }
 
 // readPump pumps messages from the websocket connection to the Hub.
@@ -74,23 +78,32 @@ func (c *Client) ReadPump() {
 
 		switch mt {
 		case websocket.TextMessage:
-		case websocket.BinaryMessage:
+			req := new(dto.MessageWS)
+			err = json.Unmarshal(message, req)
+			if err != nil {
+				log.Printf("error unmarshaling message: %v", err)
+				break
+			}
 
+			broadcast := &dto.BroadcastMessageWS{
+				MessageWS: req,
+				ClientID:  c.Id,
+			}
+
+			messageId, err := c.HandlerSendMessage(broadcast)
+			if err != nil {
+				log.Printf("error send message message: %v", err)
+				break
+			}
+
+			broadcast.MessageID = messageId
+
+			c.Hub.broadcast <- broadcast
+		default:
+			log.Println("unsupported message type:", mt)
+			continue
 		}
 
-		req := new(dto.MessageWS)
-		err = json.Unmarshal(message, req)
-		if err != nil {
-			log.Printf("error unmarshaling message: %v", err)
-			break
-		}
-
-		broadcast := &dto.BroadcastMessageWS{
-			MessageWS: req,
-			ClientID:  c.Id,
-		}
-
-		c.Hub.broadcast <- broadcast
 	}
 }
 
@@ -119,13 +132,25 @@ func (c *Client) WritePump() {
 			if err != nil {
 				return
 			}
-			w.Write(message)
+
+			msgByte, err := json.Marshal(message)
+			if err != nil {
+				log.Println("error marshal message on writepump, ", err.Error())
+				return
+			}
+
+			w.Write(msgByte)
 
 			// Add queued chat messages to the current websocket message.
 			n := len(c.Send)
 			for range n {
+				msgByte, err := json.Marshal(<-c.Send)
+				if err != nil {
+					continue
+				}
+
 				w.Write(newline)
-				w.Write(<-c.Send)
+				w.Write(msgByte)
 			}
 
 			if err := w.Close(); err != nil {

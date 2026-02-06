@@ -100,25 +100,3 @@ func (u *UserController) Me(c *echo.Context) error {
 
 	return util.ResponseOk(c, message.SUCCESS_GET_ME, converter.UserEntityToDto(user))
 }
-
-func (u *UserController) Lists(c *echo.Context) error {
-	ctx := c.Request().Context()
-	req := new(dto.ListUsersRequest)
-	err := c.Bind(req)
-	if err != nil {
-		return util.ResponseErr(c, message.ERR_LIST_USERS, err)
-	}
-
-	users, err := u.userService.HandleLists(ctx, req)
-	if err != nil {
-		return util.ResponseErr(c, message.ERR_LIST_USERS, err)
-	}
-
-	usersDto := make([]dto.User, len(users))
-
-	for i, user := range users {
-		usersDto[i] = *converter.UserEntityToDto(&user)
-	}
-
-	return util.ResponseOk(c, message.SUCCESS_LIST_USERS, usersDto)
-}

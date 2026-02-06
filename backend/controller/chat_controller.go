@@ -44,7 +44,7 @@ func (cc *ChatController) UploadFileAttachments(c *echo.Context) error {
 		return util.ResponseErr(c, message.ERR_RETRIEVE_FILES, nil)
 	}
 
-	err = cc.chatService.HandleUploadFileAttachments(&ctx, messageId, files)
+	err = cc.chatService.HandleUploadFileAttachments(ctx, messageId, files)
 	if err != nil {
 		return util.ResponseErr(c, message.ERR_SEND_FILES, err)
 	}

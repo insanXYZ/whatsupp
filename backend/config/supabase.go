@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strings"
+	"whatsupp-backend/storage"
 
 	storage_go "github.com/supabase-community/storage-go"
 )
@@ -36,23 +37,25 @@ func NewSupabaseStorageClient() (*storage_go.Client, error) {
 		nil,
 	)
 
-	if err := createBucketIfNotExists(client, "file-attachment", storage_go.BucketOptions{
+	if err := createBucketIfNotExists(client, storage.FILE_ATTACHMENT_BUCKET, storage_go.BucketOptions{
 		Public: true,
 	}); err != nil {
 		return nil, err
 	}
 
-	if err := createBucketIfNotExists(client, "user-profile", storage_go.BucketOptions{
+	if err := createBucketIfNotExists(client, storage.USER_PROFILE_BUCKET, storage_go.BucketOptions{
 		Public: true,
 	}); err != nil {
 		return nil, err
 	}
 
-	if err := createBucketIfNotExists(client, "group-profile", storage_go.BucketOptions{
+	if err := createBucketIfNotExists(client, storage.GROUP_PROFILE_BUCKET, storage_go.BucketOptions{
 		Public: true,
 	}); err != nil {
 		return nil, err
 	}
+
+	storage.InitStorage()
 
 	return client, nil
 }

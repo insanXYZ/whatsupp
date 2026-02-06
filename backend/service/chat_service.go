@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+	"whatsupp-backend/dto"
 	"whatsupp-backend/entity"
 	"whatsupp-backend/repository"
 	"whatsupp-backend/storage"
@@ -68,10 +69,11 @@ func (cs *ChatService) HandleUpgradeWs(ctx context.Context, claims jwt.MapClaims
 	}
 
 	client := &websocket.Client{
-		Id:   atoiId,
-		Hub:  cs.hub,
-		Conn: ws,
-		Send: make(chan []byte, 256),
+		Id:                 atoiId,
+		Hub:                cs.hub,
+		Conn:               ws,
+		Send:               make(chan *dto.BroadcastMessageWS, 250),
+		HandlerSendMessage: cs.handleSaveMessage,
 	}
 
 	client.Hub.Register(client)
@@ -134,4 +136,26 @@ func (cs *ChatService) HandleUploadFileAttachments(ctx context.Context, messageI
 		return nil
 
 	})
+}
+
+// return id of row insert message
+func (cs *ChatService) handleSaveMessage(msg *dto.BroadcastMessageWS) (int, error) {
+	ctx := context.Background()
+
+	member := new(entity.Member)
+
+	err := cs.memberRepository.TakeByUserIdAndGroupId(ctx, msg.ClientID, msg.GroupID, member)
+	if err != nil {
+		return 0, err
+	}
+
+	newMessage := &entity.Message{
+		MemberID: member.ID,
+		Message:  msg.Message,
+	}
+
+	err = cs.messageRepository.Create(ctx, newMessage)
+
+	return newMessage.ID, err
+
 }

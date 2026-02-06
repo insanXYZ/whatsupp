@@ -2,8 +2,29 @@ import { AppSidebar } from "@/components/chat/sidebar";
 import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
+import { NAV_TITLE_CHAT } from "@/navigation/navigation";
+import { ConnectWS } from "@/utils/ws";
+import { useState } from "react";
 
 export default function Page() {
+  const [nav, setNav] = useState<string>(NAV_TITLE_CHAT)
+  const ws = ConnectWS()
+
+  ws.onopen = (ev) => {
+    console.log("success open: ",ev.type)
+  }
+
+  ws.onclose = (ev) => {
+    console.log("close ws: ",ev.reason)
+  }
+
+  ws.onerror = (ev) => {
+    console.log("error ws: ",ev.type)
+  }
+
+  ws.onmessage = (ev) => {
+    console.log("incoming message: ",ev.data)
+  }
 
 
   return (
@@ -14,7 +35,7 @@ export default function Page() {
         } as React.CSSProperties
       }
     >
-      <AppSidebar />
+      <AppSidebar handlerChange={v => setNav(v)} />
       {/* <SidebarInset>
         <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4">
           <SidebarTrigger className="-ml-1" />

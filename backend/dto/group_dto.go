@@ -6,3 +6,7 @@ type Group struct {
 	Description string `json:"description,omitempty"`
 	Type        string `json:"type,omitempty"`
 }
+
+type ListGroupRequest struct {
+	Name string `query:"name"`
+}

@@ -23,7 +23,3 @@ type UpdateUserRequest struct {
 	Email    string `json:"email" validate:"omitempty,email"`
 	Password string `json:"password" validate:"omitempty,gte=8"`
 }
-
-type ListUsersRequest struct {
-	Name string `query:"name"`
-}

@@ -145,9 +145,14 @@ const data = {
   ],
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  // Note: I'm using state to show active item.
-  // IRL you should use the url/router.
+type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
+  handlerChange: (s: string) => any
+}
+
+export function AppSidebar({
+  handlerChange,
+  ...props
+}: AppSidebarProps) {
 
   const [activeItem, setActiveItem] = React.useState(Navigation[0]);
   const [mails, setMails] = React.useState(data.mails);
@@ -184,7 +189,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroup>
             <SidebarGroupContent className="px-1.5 md:px-0">
               <SidebarMenu>
-                {Navigation.map((item) => (
+                {Navigation.map((item) => {
+                  handlerChange(item.title)
+                  return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       tooltip={{
@@ -209,7 +216,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <span>{item.title}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
+                )
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
