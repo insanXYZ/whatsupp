@@ -8,7 +8,7 @@ import (
 const (
 	FILE_ATTACHMENT_BUCKET = "file-attachment"
 	USER_PROFILE_BUCKET    = "user-profile"
-	GROUP_PROFILE_BUCKET   = "group_profile"
+	GROUP_PROFILE_BUCKET   = "group-profile"
 )
 
 var (

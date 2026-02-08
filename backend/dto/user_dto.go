@@ -5,6 +5,7 @@ type User struct {
 	Name  string `json:"name,omitempty"`
 	Email string `json:"email,omitempty"`
 	Image string `json:"image,omitempty"`
+	Bio   string `json:"bio,omitempty"`
 }
 
 type LoginRequest struct {

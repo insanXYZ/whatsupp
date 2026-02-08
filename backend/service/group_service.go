@@ -2,28 +2,28 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"whatsupp-backend/dto"
-	"whatsupp-backend/entity"
 	"whatsupp-backend/repository"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type GroupService struct {
+	validator       *validator.Validate
 	userRepository  *repository.UserRepository
 	groupRepository *repository.GroupRepository
 }
 
-func NewGroupRepository(userRepository *repository.UserRepository, groupRepository *repository.GroupRepository) *GroupService {
+func NewGroupService(validator *validator.Validate, userRepository *repository.UserRepository, groupRepository *repository.GroupRepository) *GroupService {
 	return &GroupService{
+		validator:       validator,
 		userRepository:  userRepository,
 		groupRepository: groupRepository,
 	}
 }
 
-func (u *GroupService) HandleLists(ctx context.Context, req *dto.ListGroupRequest) ([]entity.User, error) {
-	nameFilter := fmt.Sprintf("%%%s%%", req.Name)
-	var users []entity.User
-
-	err := u.userRepository.FindByName(ctx, nameFilter, &users)
-	return users, err
+func (g *GroupService) HandleLists(ctx context.Context, claims jwt.MapClaims, req *dto.SearchGroupRequest) ([]dto.SearchGroupResponse, error) {
+	currUserId := claims["sub"].(int)
+	return g.groupRepository.SearchGroupAndUserWithName(ctx, currUserId, req.Name)
 }

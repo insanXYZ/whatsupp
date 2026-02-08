@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(100) NOT NULL,
   password VARCHAR(100) NOT NULL,
   image TEXT NOT NULL,
+  bio VARCHAR(100),
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ,
   PRIMARY KEY(id)

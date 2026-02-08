@@ -7,6 +7,16 @@ type Group struct {
 	Type        string `json:"type,omitempty"`
 }
 
-type ListGroupRequest struct {
+type SearchGroupRequest struct {
 	Name string `query:"name"`
+}
+
+type SearchGroupResponse struct {
+	Type      string  `json:"type"`
+	ID        int     `json:"id"`
+	Name      string  `json:"name"`
+	Image     string  `json:"image"`
+	Bio       *string `json:"bio,omitempty"`
+	GroupType *string `json:"group_type,omitempty"`
+	GroupID   *int    `json:"group_id"`
 }

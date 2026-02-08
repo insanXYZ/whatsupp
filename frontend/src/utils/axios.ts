@@ -1,7 +1,7 @@
 import axios from "axios";
-import 'dotenv/config';
+import "dotenv/config";
 
 export const API = axios.create({
-  baseURL: process.env.BASE_URL_API,
+  baseURL: process.env.NEXT_PUBLIC_BASE_URL_API,
   withCredentials: true,
 });

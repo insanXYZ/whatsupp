@@ -32,11 +32,11 @@ type ChatService struct {
 }
 
 func NewChatService(
+	validator *validator.Validate,
 	groupRepository *repository.GroupRepository,
 	memberRepository *repository.MemberRepository,
 	messageRepository *repository.MessageRepository,
 	messageAttachmentRepository *repository.MessageAttachmentRepository,
-	validator *validator.Validate,
 	hub *websocket.Hub,
 	storage *storage_go.Client,
 ) *ChatService {

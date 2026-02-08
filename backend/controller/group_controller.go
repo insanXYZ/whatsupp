@@ -2,7 +2,6 @@ package controller
 
 import (
 	"whatsupp-backend/dto"
-	"whatsupp-backend/dto/converter"
 	"whatsupp-backend/dto/message"
 	"whatsupp-backend/service"
 	"whatsupp-backend/util"
@@ -22,22 +21,17 @@ func NewGroupController(groupService *service.GroupService) *GroupController {
 
 func (g *GroupController) Lists(c *echo.Context) error {
 	ctx := c.Request().Context()
-	req := new(dto.ListGroupRequest)
+	claims := util.GetClaims(c)
+	req := new(dto.SearchGroupRequest)
 	err := c.Bind(req)
 	if err != nil {
-		return util.ResponseErr(c, message.ERR_LIST_USERS, err)
+		return util.ResponseErr(c, message.ERR_LIST_GROUPS, err)
 	}
 
-	users, err := g.groupService.HandleLists(ctx, req)
+	results, err := g.groupService.HandleLists(ctx, claims, req)
 	if err != nil {
-		return util.ResponseErr(c, message.ERR_LIST_USERS, err)
+		return util.ResponseErr(c, message.ERR_LIST_GROUPS, err)
 	}
 
-	usersDto := make([]dto.User, len(users))
-
-	for i, user := range users {
-		usersDto[i] = *converter.UserEntityToDto(&user)
-	}
-
-	return util.ResponseOk(c, message.SUCCESS_LIST_USERS, usersDto)
+	return util.ResponseOk(c, message.ERR_LIST_GROUPS, results)
 }

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"whatsupp-backend/dto"
 	"whatsupp-backend/entity"
 	"whatsupp-backend/repository"
@@ -113,13 +112,3 @@ func (u *UserService) HandleMe(ctx context.Context, claims jwt.MapClaims) (*enti
 	err := u.userRepository.TakeById(ctx, user, claims["id"].(string))
 	return user, err
 }
-
-func (u *UserService) HandleLists(ctx context.Context, req *dto.ListUsersRequest) ([]entity.User, error) {
-	nameFilter := fmt.Sprintf("%%%s%%", req.Name)
-	var users []entity.User
-
-	err := u.userRepository.FindByName(ctx, nameFilter, &users)
-	return users, err
-}
-
-func (u *UserService) handleSendMessage()

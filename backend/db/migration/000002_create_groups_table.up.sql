@@ -8,7 +8,7 @@ END$$;
 CREATE TABLE IF NOT EXISTS groups (
   id SERIAL NOT NULL,
   name VARCHAR(100) NOT NULL,
-  description VARCHAR(100) NOT NULL,
+  bio VARCHAR(100) NOT NULL,
   type type_group NOT NULL,
   image TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
