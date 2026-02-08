@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -18,5 +19,24 @@ func NewGorm() (*gorm.DB, error) {
 		os.Getenv("DB_SSLMODE"),
 	)
 
-	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+
+	sql, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	err = sql.Ping()
+	if err != nil {
+		return nil, err
+	}
+
+	sql.SetMaxIdleConns(10)
+	sql.SetMaxOpenConns(100)
+	sql.SetConnMaxLifetime(time.Hour)
+
+	return db, nil
 }
