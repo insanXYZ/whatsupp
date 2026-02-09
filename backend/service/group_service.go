@@ -4,9 +4,9 @@ import (
 	"context"
 	"whatsupp-backend/dto"
 	"whatsupp-backend/repository"
+	"whatsupp-backend/util"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type GroupService struct {
@@ -23,7 +23,6 @@ func NewGroupService(validator *validator.Validate, userRepository *repository.U
 	}
 }
 
-func (g *GroupService) HandleLists(ctx context.Context, claims jwt.MapClaims, req *dto.SearchGroupRequest) ([]dto.SearchGroupResponse, error) {
-	currUserId := claims["sub"].(int)
-	return g.groupRepository.SearchGroupAndUserWithName(ctx, currUserId, req.Name)
+func (g *GroupService) HandleLists(ctx context.Context, claims *util.Claims, req *dto.SearchGroupRequest) ([]dto.SearchGroupResponse, error) {
+	return g.groupRepository.SearchGroupAndUserWithName(ctx, claims.Sub, req.Name)
 }

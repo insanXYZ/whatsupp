@@ -6,8 +6,9 @@ import { AppSidebarNavigation } from "@/components/chat/sidebar-navigation";
 import { Sidebar, useSidebar } from "@/components/ui/sidebar";
 import { NAV_TITLE_CHAT } from "@/navigation/navigation";
 import { HttpMethod, Mutation } from "@/utils/tanstack";
+import Image from "next/image";
 import { ReactNode, useEffect, useState } from "react";
-
+import { useDebounce } from "use-debounce";
 export default function Page() {
   // AppSidebarNavigation
   const [activeItem, setActiveItem] = useState<string>(NAV_TITLE_CHAT);
@@ -17,7 +18,8 @@ export default function Page() {
   const [sidebarContent, setSidebarContent] = useState<ReactNode>();
   const [sidebarContentHeader, setSidebarContentHeader] = useState<ReactNode>();
   const [groupId, setGroupId] = useState<number | undefined>(undefined);
-  const [search, setSearch] = useState<string>();
+  const [search, setSearch] = useState<string>("");
+  const [searchDebounce] = useDebounce(search, 600);
 
   // AppSidebarInset
   const [sidebarInsetContent, setSidebarInsetContent] = useState<ReactNode>();
@@ -33,11 +35,42 @@ export default function Page() {
         method: HttpMethod.GET,
       });
     }
-  }, [search]);
+  }, [searchDebounce]);
 
   useEffect(() => {
     if (isSuccess) {
-      console.log(data);
+      switch (activeItem) {
+        case NAV_TITLE_CHAT:
+          const groups: SearchGroupResponse[] =
+            data.data as SearchGroupResponse[];
+
+          setSidebarContent(() =>
+            groups.map((g) => (
+              <div
+                key={g.id}
+                className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
+             flex items-center gap-3 border-b p-4 text-sm leading-tight
+             last:border-b-0 min-w-0"
+              >
+                <Image
+                  src={g.image}
+                  alt="anu"
+                  width={35}
+                  height={35}
+                  className="shrink-0"
+                />
+
+                <div className="flex min-w-0 flex-col gap-1">
+                  <span className="font-medium truncate">{g.name}</span>
+
+                  <span className="line-clamp-2 text-xs wrap-break-word">
+                    {g.bio ?? "~"}
+                  </span>
+                </div>
+              </div>
+            )),
+          );
+      }
     }
   }, [isSuccess]);
 

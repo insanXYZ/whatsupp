@@ -107,7 +107,7 @@ export default function RegisterPage() {
                   {...field}
                   id="password"
                   type="password"
-                  placeholder="m@example.com"
+                  placeholder="***"
                   required
                 />
                 <FieldError errors={[fieldState.error]} />

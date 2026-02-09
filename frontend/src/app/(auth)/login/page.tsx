@@ -96,7 +96,7 @@ export default function LoginPage() {
                   {...field}
                   id="password"
                   type="password"
-                  placeholder="m@example.com"
+                  placeholder="***"
                   required
                 />
                 <FieldError errors={[fieldState.error]} />

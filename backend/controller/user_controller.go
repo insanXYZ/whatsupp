@@ -39,7 +39,7 @@ func (u *UserController) Login(c *echo.Context) error {
 	accToken, err := util.GenerateJWT(jwt.MapClaims{
 		"sub":   user.ID,
 		"email": user.Email,
-		"exp":   time.Now().Add(15 * time.Minute).Unix(),
+		"exp":   time.Now().Add(30 * 24 * time.Hour).Unix(),
 	})
 
 	if err != nil {

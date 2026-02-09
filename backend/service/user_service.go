@@ -10,7 +10,6 @@ import (
 	"whatsupp-backend/util"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
 
@@ -70,6 +69,7 @@ func (u *UserService) HandleRegister(ctx context.Context, req *dto.RegisterReque
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: password,
+		Bio:      "~",
 		Image:    storage.DEFAULT_PROFILE_PICTURE_URL,
 	}
 
@@ -77,18 +77,18 @@ func (u *UserService) HandleRegister(ctx context.Context, req *dto.RegisterReque
 
 }
 
-func (u *UserService) HandleUpdateUser(ctx context.Context, req *dto.UpdateUserRequest, claims jwt.MapClaims) error {
+func (u *UserService) HandleUpdateUser(ctx context.Context, req *dto.UpdateUserRequest, claims *util.Claims) error {
 	err := u.validator.Struct(req)
 	if err != nil {
 		return err
 	}
 
-	if req.Email != claims["email"].(string) && u.isUserExist(ctx, req.Email) {
+	if req.Email != claims.Email && u.isUserExist(ctx, req.Email) {
 		return errors.New("email has been used")
 	}
 
 	user := new(entity.User)
-	err = u.userRepository.TakeByEmail(ctx, claims["email"].(string), user)
+	err = u.userRepository.TakeByEmail(ctx, claims.Email, user)
 	if err != nil {
 		return err
 	}
@@ -107,8 +107,8 @@ func (u *UserService) HandleUpdateUser(ctx context.Context, req *dto.UpdateUserR
 	return u.userRepository.Update(ctx, user)
 }
 
-func (u *UserService) HandleMe(ctx context.Context, claims jwt.MapClaims) (*entity.User, error) {
+func (u *UserService) HandleMe(ctx context.Context, claims *util.Claims) (*entity.User, error) {
 	user := new(entity.User)
-	err := u.userRepository.TakeById(ctx, user, claims["id"].(string))
+	err := u.userRepository.TakeById(ctx, user, claims.Sub)
 	return user, err
 }

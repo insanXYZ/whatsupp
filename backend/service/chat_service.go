@@ -2,21 +2,19 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"time"
 	"whatsupp-backend/dto"
 	"whatsupp-backend/entity"
 	"whatsupp-backend/repository"
 	"whatsupp-backend/storage"
+	"whatsupp-backend/util"
 	"whatsupp-backend/websocket"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/golang-jwt/jwt/v5"
 	storage_go "github.com/supabase-community/storage-go"
 	"gorm.io/gorm"
 )
@@ -51,25 +49,16 @@ func NewChatService(
 	}
 }
 
-func (cs *ChatService) HandleUpgradeWs(ctx context.Context, claims jwt.MapClaims, w http.ResponseWriter, r *http.Request) error {
+func (cs *ChatService) HandleUpgradeWs(ctx context.Context, claims *util.Claims, w http.ResponseWriter, r *http.Request) error {
 	ws, err := websocket.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return err
 	}
 
-	userId, err := claims.GetSubject()
-	if err != nil {
-		return errors.New("error claims subject")
-	}
-
-	atoiId, err := strconv.Atoi(userId)
-	if err != nil {
-
-		return errors.New("error atoi")
-	}
+	userId := claims.Sub
 
 	client := &websocket.Client{
-		Id:                 atoiId,
+		Id:                 userId,
 		Hub:                cs.hub,
 		Conn:               ws,
 		Send:               make(chan *dto.BroadcastMessageWS, 250),
@@ -102,7 +91,7 @@ func (cs *ChatService) HandleUploadFileAttachments(ctx context.Context, messageI
 
 			ext := filepath.Ext(file.Filename)
 
-			fileName := fmt.Sprintf("whatsupp-%s-%s%s",
+			fileName := fmt.Sprintf("whatsupp-%s-%v%s",
 				messageID,
 				time.Now().Unix(),
 				ext,

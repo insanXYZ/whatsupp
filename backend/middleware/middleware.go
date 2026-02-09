@@ -14,6 +14,7 @@ var (
 
 func InitMiddleware() {
 	HasJWT = echojwt.WithConfig(echojwt.Config{
+		TokenLookup: "cookie:X-ACC-TOKEN",
 		SuccessHandler: func(c *echo.Context) error {
 			c.Set("user", c.Get("user").(*jwt.Token).Claims.(jwt.MapClaims))
 			return nil
