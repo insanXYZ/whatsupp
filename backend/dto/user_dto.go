@@ -1,5 +1,7 @@
 package dto
 
+const COOKIES_ACC_TOKEN_NAME = "X-ACC-TOKEN"
+
 type User struct {
 	ID    int    `json:"id,omitempty"`
 	Name  string `json:"name,omitempty"`

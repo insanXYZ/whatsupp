@@ -28,6 +28,7 @@ func SetRoute(cfg *RouteConfig) {
 	user := hasJwtRoute.Group("/me", middleware.HasJWT)
 	user.PUT("", cfg.userController.UpdateMe)
 	user.GET("", cfg.userController.Me)
+	user.GET("/logout", cfg.userController.Logout)
 
 	group := hasJwtRoute.Group("/groups")
 	group.GET("", cfg.groupController.Lists)

@@ -13,6 +13,8 @@ func UserEntityToDto(user *entity.User) *dto.User {
 	return &dto.User{
 		ID:    user.ID,
 		Name:  user.Name,
+		Image: user.Image,
+		Bio:   user.Bio,
 		Email: user.Email,
 	}
 }

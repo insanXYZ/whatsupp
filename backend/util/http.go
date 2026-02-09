@@ -41,3 +41,23 @@ func ResponseErrInternal(c *echo.Context, err any) error {
 
 	return c.JSON(http.StatusInternalServerError, response)
 }
+
+func CreateCookie(name, value string) *http.Cookie {
+	cookie := new(http.Cookie)
+	cookie.Name = name
+	cookie.Value = value
+	cookie.Path = "/"
+
+	return cookie
+}
+
+func DeleteCookie(name string) *http.Cookie {
+
+	cookie := new(http.Cookie)
+	cookie.Name = name
+	cookie.Value = ""
+	cookie.Path = "/"
+	cookie.MaxAge = -1
+
+	return cookie
+}

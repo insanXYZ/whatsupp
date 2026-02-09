@@ -7,6 +7,7 @@ const (
 	SUCCESS_LOGIN       = ""
 	SUCCESS_LIST_GROUPS = ""
 	SUCCESS_SEND_FILES  = ""
+	SUCCESS_LOGOUT      = ""
 
 	ERR_BIND_REQ       = ""
 	ERR_GET_ME         = ""
@@ -16,6 +17,7 @@ const (
 	ERR_LIST_GROUPS    = ""
 	ERR_RETRIEVE_FILES = ""
 	ERR_SEND_FILES     = ""
+	ERR_LOGOUT         = ""
 
 	WS_SUCCESS_SYNC_CHAT = ""
 	WS_ERR_SYNC_CHAT     = ""

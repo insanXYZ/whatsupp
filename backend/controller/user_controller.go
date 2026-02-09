@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"net/http"
 	"time"
 	"whatsupp-backend/dto"
 	"whatsupp-backend/dto/converter"
@@ -46,10 +45,7 @@ func (u *UserController) Login(c *echo.Context) error {
 		return util.ResponseErrInternal(c, err)
 	}
 
-	cookie := new(http.Cookie)
-	cookie.Name = "X-ACC-TOKEN"
-	cookie.Value = accToken
-	cookie.Path = "/"
+	cookie := util.CreateCookie(dto.COOKIES_ACC_TOKEN_NAME, accToken)
 
 	c.SetCookie(cookie)
 	return util.ResponseOk(c, message.SUCCESS_LOGIN, nil)
@@ -99,4 +95,13 @@ func (u *UserController) Me(c *echo.Context) error {
 	}
 
 	return util.ResponseOk(c, message.SUCCESS_GET_ME, converter.UserEntityToDto(user))
+}
+
+func (u *UserController) Logout(c *echo.Context) error {
+
+	cookie := util.DeleteCookie(dto.COOKIES_ACC_TOKEN_NAME)
+	c.SetCookie(cookie)
+
+	return util.ResponseOk(c, message.SUCCESS_LOGOUT, nil)
+
 }

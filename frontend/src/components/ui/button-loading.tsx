@@ -1,17 +1,18 @@
 import React from "react";
 import { Button } from "./button";
-import { Icon } from "@iconify/react";
+import { LoaderCircle } from "lucide-react";
 
 export const ButtonLoading = ({
   children,
   isPending,
-}: {
+  ...props
+}: React.ComponentProps<"button"> & {
   children: React.ReactNode;
   isPending: boolean;
 }) => {
   return (
-    <Button disabled={isPending}>
-      {isPending && <Icon icon={"line-md:loading-loop"} />}
+    <Button {...props} disabled={isPending}>
+      {isPending && <LoaderCircle className="animate-spin" />}
       {children}
     </Button>
   );

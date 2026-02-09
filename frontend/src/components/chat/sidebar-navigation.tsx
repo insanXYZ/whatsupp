@@ -12,6 +12,7 @@ import {
 } from "../ui/sidebar";
 import { MessageSquareQuote } from "lucide-react";
 import { Dispatch, SetStateAction } from "react";
+import { NavUser } from "./nav-user";
 
 export const AppSidebarNavigation = ({
   activeItem,
@@ -78,9 +79,9 @@ export const AppSidebarNavigation = ({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      {/* <SidebarFooter>
-          <NavUser user={data.user} />
-        </SidebarFooter> */}
+      <SidebarFooter>
+        <NavUser />
+      </SidebarFooter>
     </Sidebar>
   );
 };
