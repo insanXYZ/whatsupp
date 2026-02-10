@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Whatsupp",
   description: "Maybe you can chat with ur ex",
+  icons: "/favicon.svg",
 };
 
 export default function RootLayout({

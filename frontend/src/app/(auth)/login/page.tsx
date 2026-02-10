@@ -1,5 +1,6 @@
 "use client";
 
+import { Banner } from "@/components/auth/banner";
 import { ButtonLoading } from "@/components/ui/button-loading";
 import { CardContent } from "@/components/ui/card";
 import {
@@ -13,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { LoginDto } from "@/dto/auth-dto";
 import { HttpMethod, Mutation } from "@/utils/tanstack";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { MessageSquareQuote } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -50,13 +52,7 @@ export default function LoginPage() {
 
   return (
     <CardContent className="grid p-0 md:grid-cols-2">
-      <div className="bg-muted relative hidden md:block">
-        <img
-          src="/next.svg"
-          alt="Image"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-        />
-      </div>
+      <Banner />
       <form
         noValidate
         onSubmit={form.handleSubmit(onSubmit)}

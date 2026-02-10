@@ -1,11 +1,19 @@
 "use client";
 
-import { AppSidebarContent } from "@/components/chat/sidebar-content";
-import { AppSidebarInset } from "@/components/chat/sidebar-inset";
+import {
+  AppSidebarContent,
+  RowsGroupChat,
+} from "@/components/chat/sidebar-content";
+import {
+  AppSidebarInset,
+  InsetHeaderGroup,
+} from "@/components/chat/sidebar-inset";
 import { AppSidebarNavigation } from "@/components/chat/sidebar-navigation";
 import { Sidebar, useSidebar } from "@/components/ui/sidebar";
+import { GroupNavigationContent, SearchGroupResponse } from "@/dto/group-dto";
 import { NAV_TITLE_CHAT } from "@/navigation/navigation";
 import { HttpMethod, Mutation } from "@/utils/tanstack";
+import { ConnectWS } from "@/utils/ws";
 import Image from "next/image";
 import { ReactNode, useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
@@ -27,13 +35,21 @@ export default function Page() {
 
   const { mutate, isPending, isSuccess, data } = Mutation(["getGroups"]);
 
+  const handleGroupSelected = (group: GroupNavigationContent) => {
+    setGroupId(group.id);
+
+    setSidebarInsetHeader(InsetHeaderGroup(group.image, group.name));
+  };
+
   useEffect(() => {
-    if (activeItem == NAV_TITLE_CHAT) {
-      mutate({
-        url: "/groups?name=" + search,
-        body: null,
-        method: HttpMethod.GET,
-      });
+    if (searchDebounce != "") {
+      if (activeItem == NAV_TITLE_CHAT) {
+        mutate({
+          url: "/groups?name=" + search,
+          body: null,
+          method: HttpMethod.GET,
+        });
+      }
     }
   }, [searchDebounce]);
 
@@ -43,55 +59,29 @@ export default function Page() {
         case NAV_TITLE_CHAT:
           const groups: SearchGroupResponse[] =
             data.data as SearchGroupResponse[];
-
-          setSidebarContent(() =>
-            groups.map((g) => (
-              <div
-                key={g.id}
-                className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
-             flex items-center gap-3 border-b p-4 text-sm leading-tight
-             last:border-b-0 min-w-0"
-              >
-                <Image
-                  src={g.image}
-                  alt="anu"
-                  width={35}
-                  height={35}
-                  className="shrink-0"
-                />
-
-                <div className="flex min-w-0 flex-col gap-1">
-                  <span className="font-medium truncate">{g.name}</span>
-
-                  <span className="line-clamp-2 text-xs wrap-break-word">
-                    {g.bio ?? "~"}
-                  </span>
-                </div>
-              </div>
-            )),
-          );
+          setSidebarContent(() => RowsGroupChat(groups, handleGroupSelected));
       }
     }
   }, [isSuccess]);
 
-  // const ws = ConnectWS();
-  //
-  // ws.onopen = (ev) => {
-  //   console.log("success open: ", ev.type);
-  // };
-  //
-  // ws.onclose = (ev) => {
-  //   console.log("close ws: ", ev.reason);
-  // };
-  //
-  // ws.onerror = (ev) => {
-  //   console.log("error ws: ", ev.type);
-  // };
-  //
-  // ws.onmessage = (ev) => {
-  //   console.log("incoming message: ", ev.data);
-  // };
-  //
+  const ws = ConnectWS();
+
+  ws.onopen = (ev) => {
+    console.log("success open: ", ev.type);
+  };
+
+  ws.onclose = (ev) => {
+    console.log("close ws: ", ev.reason);
+  };
+
+  ws.onerror = (ev) => {
+    console.log("error ws: ", ev.type);
+  };
+
+  ws.onmessage = (ev) => {
+    console.log("incoming message: ", ev.data);
+  };
+
   return (
     <>
       <Sidebar

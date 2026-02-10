@@ -7,6 +7,7 @@ package websocket
 import (
 	"encoding/json"
 	"log"
+	"net/http"
 	"time"
 	"whatsupp-backend/dto"
 
@@ -35,6 +36,9 @@ var (
 var Upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 type HandlerSendMessage func(msg *dto.BroadcastMessageWS) (int, error)

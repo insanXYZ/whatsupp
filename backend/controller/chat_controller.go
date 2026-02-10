@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"whatsupp-backend/dto"
 	"whatsupp-backend/dto/message"
 	"whatsupp-backend/service"
@@ -23,8 +24,11 @@ func (cc *ChatController) UpgradeWs(c *echo.Context) error {
 	ctx := c.Request().Context()
 	claims := util.GetClaims(c)
 
+	fmt.Println("incoming request upgrade ws")
+
 	err := cc.chatService.HandleUpgradeWs(ctx, claims, c.Response(), c.Request())
 	if err != nil {
+		fmt.Println("error ws:", err.Error())
 		return err
 	}
 

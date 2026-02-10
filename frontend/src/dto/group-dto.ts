@@ -1,4 +1,4 @@
-interface SearchGroupResponse {
+export interface SearchGroupResponse {
   type: string;
   id: number;
   name: string;
@@ -7,3 +7,5 @@ interface SearchGroupResponse {
   group_type?: string;
   group_id?: number;
 }
+
+export type GroupNavigationContent = SearchGroupResponse;

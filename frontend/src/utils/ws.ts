@@ -1,6 +1,6 @@
-import 'dotenv/config'
+import "dotenv/config";
 
 export const ConnectWS = (): WebSocket => {
-    const ws = new WebSocket(process.env.BASE_URL_WS!)
-    return ws
-}
+  const ws = new WebSocket(process.env.NEXT_PUBLIC_BASE_URL_WS!);
+  return ws;
+};
