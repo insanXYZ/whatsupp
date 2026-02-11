@@ -18,12 +18,12 @@ var (
 
 func InitStorage() {
 
-	DEFAULT_PROFILE_PICTURE_URL = fmt.Sprintf("%s/object/public/%s/storage.png",
+	DEFAULT_PROFILE_PICTURE_URL = fmt.Sprintf("%s/object/public/%s/default.png",
 		os.Getenv("SUPABASE_STORAGE_RAW_URL"),
 		USER_PROFILE_BUCKET,
 	)
 
-	DEFAULT_GROUP_PROFILE_PICTURE_URL = fmt.Sprintf("%s/object/public/%s/storage.png",
+	DEFAULT_GROUP_PROFILE_PICTURE_URL = fmt.Sprintf("%s/object/public/%s/default.png",
 		os.Getenv("SUPABASE_STORAGE_RAW_URL"),
 		GROUP_PROFILE_BUCKET,
 	)
