@@ -26,5 +26,7 @@ type Group struct {
 	Name      string    `gorm:"column:name"`
 	Bio       string    `gorm:"column:bio"`
 	GroupType typeGroup `gorm:"column:type;type:type_group"`
+	Image     string    `gorm:"column:image"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	Members   []Member  `gorm:"foreignKey:group_id;references:id"`
 }

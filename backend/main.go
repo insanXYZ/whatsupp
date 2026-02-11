@@ -46,7 +46,7 @@ func main() {
 
 	// init service
 
-	chatService := service.NewChatService(validator, groupRepository, memberRepository, messageRepository, messageAttachmentRepository, hub, clientStorage)
+	chatService := service.NewChatService(validator, groupRepository, memberRepository, messageRepository, messageAttachmentRepository, userRepository, hub, clientStorage)
 	userService := service.NewUserService(validator, userRepository)
 	groupService := service.NewGroupService(validator, userRepository, groupRepository)
 

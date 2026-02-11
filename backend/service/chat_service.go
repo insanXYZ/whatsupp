@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"time"
 	"whatsupp-backend/dto"
 	"whatsupp-backend/entity"
@@ -25,6 +27,7 @@ type ChatService struct {
 	memberRepository            *repository.MemberRepository
 	messageRepository           *repository.MessageRepository
 	messageAttachmentRepository *repository.MessageAttachmentRepository
+	userRepository              *repository.UserRepository
 	hub                         *websocket.Hub
 	storage                     *storage_go.Client
 }
@@ -35,10 +38,12 @@ func NewChatService(
 	memberRepository *repository.MemberRepository,
 	messageRepository *repository.MessageRepository,
 	messageAttachmentRepository *repository.MessageAttachmentRepository,
+	userRepository *repository.UserRepository,
 	hub *websocket.Hub,
 	storage *storage_go.Client,
 ) *ChatService {
 	return &ChatService{
+		userRepository:              userRepository,
 		storage:                     storage,
 		hub:                         hub,
 		validator:                   validator,
@@ -58,11 +63,12 @@ func (cs *ChatService) HandleUpgradeWs(ctx context.Context, claims *util.Claims,
 	userId := claims.Sub
 
 	client := &websocket.Client{
-		Id:                 userId,
-		Hub:                cs.hub,
-		Conn:               ws,
-		Send:               make(chan *dto.BroadcastMessageWS, 250),
-		HandlerSendMessage: cs.handleSaveMessage,
+		Id:                    userId,
+		Hub:                   cs.hub,
+		Conn:                  ws,
+		Send:                  make(chan *dto.BroadcastMessageWS, 250),
+		HandlerSendMessage:    cs.handleSaveMessage,
+		HandlerCreateNewGroup: cs.handleCreateNewGroup,
 	}
 
 	client.Hub.Register(client)
@@ -75,7 +81,7 @@ func (cs *ChatService) HandleUpgradeWs(ctx context.Context, claims *util.Claims,
 
 func (cs *ChatService) HandleUploadFileAttachments(ctx context.Context, messageID string, files []*multipart.FileHeader) error {
 
-	return cs.messageAttachmentRepository.DB.Transaction(func(tx *gorm.DB) error {
+	return cs.messageAttachmentRepository.Transaction(ctx, func(tx *gorm.DB) error {
 
 		messageRepoTx := cs.messageRepository.WithTx(tx)
 		err := messageRepoTx.TakeById(ctx, &entity.Message{}, messageID)
@@ -133,7 +139,7 @@ func (cs *ChatService) handleSaveMessage(msg *dto.BroadcastMessageWS) (int, erro
 
 	member := new(entity.Member)
 
-	err := cs.memberRepository.TakeByUserIdAndGroupId(ctx, msg.ClientID, msg.GroupID, member)
+	err := cs.memberRepository.TakeByUserIdAndGroupId(ctx, msg.ClientID, *msg.GroupID, member)
 	if err != nil {
 		return 0, err
 	}
@@ -147,4 +153,80 @@ func (cs *ChatService) handleSaveMessage(msg *dto.BroadcastMessageWS) (int, erro
 
 	return newMessage.ID, err
 
+}
+
+func (cs *ChatService) handleCreateNewGroup(senderId, receiverId int) (int, error) {
+	ctx := context.Background()
+
+	group := new(entity.Group)
+	err := cs.groupRepository.TakePrivateGroupBySenderAndReceiverId(ctx, senderId, receiverId, group)
+
+	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+
+			err := cs.groupRepository.Transaction(ctx, func(tx *gorm.DB) error {
+				sender, receiver := new(entity.User), new(entity.User)
+
+				userTx := cs.userRepository.WithTx(tx)
+				groupTx := cs.groupRepository.WithTx(tx)
+				memberTx := cs.memberRepository.WithTx(tx)
+
+				err := userTx.TakeById(ctx, sender, senderId)
+				if err != nil {
+					return err
+				}
+
+				err = userTx.TakeById(ctx, receiver, receiverId)
+				if err != nil {
+					return err
+				}
+
+				newGroup := &entity.Group{
+					Name:      fmt.Sprintf("%s-%s", "PRIVATE", strconv.Itoa(int(time.Now().Unix()))),
+					Bio:       "~",
+					GroupType: entity.GROUP,
+					Image:     storage.DEFAULT_GROUP_PROFILE_PICTURE_URL,
+				}
+
+				err = groupTx.Create(ctx, newGroup)
+				if err != nil {
+					return err
+				}
+
+				members := []*entity.Member{
+					{
+						Role:    entity.MEMBER,
+						UserID:  sender.ID,
+						GroupID: newGroup.ID,
+					},
+					{
+						Role:    entity.MEMBER,
+						UserID:  receiver.ID,
+						GroupID: newGroup.ID,
+					},
+				}
+
+				err = memberTx.Creates(ctx, members)
+				if err != nil {
+					return err
+				}
+
+				group = newGroup
+
+				return nil
+
+			})
+
+			if err != nil {
+				return 0, err
+			}
+
+		} else {
+			return 0, err
+		}
+
+	}
+
+	return group.ID, err
 }

@@ -13,7 +13,7 @@ type MessageRepository struct {
 func NewMessageRepository(db *gorm.DB) *MessageRepository {
 	return &MessageRepository{
 		repository: &repository[*entity.Message]{
-			DB: db,
+			db: db,
 		},
 	}
 }
@@ -21,7 +21,7 @@ func NewMessageRepository(db *gorm.DB) *MessageRepository {
 func (m *MessageRepository) WithTx(tx *gorm.DB) *MessageRepository {
 	return &MessageRepository{
 		repository: &repository[*entity.Message]{
-			DB: tx,
+			db: tx,
 		},
 	}
 

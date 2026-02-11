@@ -1,5 +1,6 @@
 "use client";
 
+import { ChatBannerLoading } from "@/components/chat/banner-loading";
 import {
   AppSidebarContent,
   RowsGroupChat,
@@ -14,9 +15,9 @@ import { GroupNavigationContent, SearchGroupResponse } from "@/dto/group-dto";
 import { NAV_TITLE_CHAT } from "@/navigation/navigation";
 import { HttpMethod, Mutation } from "@/utils/tanstack";
 import { ConnectWS } from "@/utils/ws";
-import Image from "next/image";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { useDebounce } from "use-debounce";
+
 export default function Page() {
   // AppSidebarNavigation
   const [activeItem, setActiveItem] = useState<string>(NAV_TITLE_CHAT);
@@ -32,6 +33,9 @@ export default function Page() {
   // AppSidebarInset
   const [sidebarInsetContent, setSidebarInsetContent] = useState<ReactNode>();
   const [sidebarInsetHeader, setSidebarInsetHeader] = useState<ReactNode>();
+
+  const wsRef = useRef<WebSocket | null>(null);
+  const [connect, setConnect] = useState<boolean>(false);
 
   const { mutate, isPending, isSuccess, data } = Mutation(["getGroups"]);
 
@@ -64,25 +68,29 @@ export default function Page() {
     }
   }, [isSuccess]);
 
-  const ws = ConnectWS();
+  useEffect(() => {
+    wsRef.current = ConnectWS();
 
-  ws.onopen = (ev) => {
-    console.log("success open: ", ev.type);
-  };
+    const ws = wsRef.current;
 
-  ws.onclose = (ev) => {
-    console.log("close ws: ", ev.reason);
-  };
+    ws.onopen = (ev) => {
+      console.log("success open: ", ev.type);
+      setConnect(true);
+    };
 
-  ws.onerror = (ev) => {
-    console.log("error ws: ", ev.type);
-  };
+    ws.onmessage = (ev) => {
+      console.log("incoming message: ", ev.data);
+    };
 
-  ws.onmessage = (ev) => {
-    console.log("incoming message: ", ev.data);
-  };
+    return () => {
+      console.log("cleanup");
+      ws.close();
+    };
+  }, []);
 
-  return (
+  return !connect ? (
+    <ChatBannerLoading />
+  ) : (
     <>
       <Sidebar
         collapsible="icon"

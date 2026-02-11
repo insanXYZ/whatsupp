@@ -41,7 +41,11 @@ var Upgrader = websocket.Upgrader{
 	},
 }
 
+// return int for message id on send attachment
 type HandlerSendMessage func(msg *dto.BroadcastMessageWS) (int, error)
+
+// return int for group id
+type HandlerCreateNewGroup func(senderId, receiverId int) (int, error)
 
 // Client is a middleman between the websocket connection and the Hub.
 type Client struct {
@@ -55,7 +59,10 @@ type Client struct {
 	// Buffered channel of outbound messages.
 	Send chan *dto.BroadcastMessageWS
 
+	// Handler for save message to db
 	HandlerSendMessage HandlerSendMessage
+
+	HandlerCreateNewGroup HandlerCreateNewGroup
 }
 
 // readPump pumps messages from the websocket connection to the Hub.
@@ -87,6 +94,18 @@ func (c *Client) ReadPump() {
 			if err != nil {
 				log.Printf("error unmarshaling message: %v", err)
 				break
+			}
+
+			isNewMessage := req.ReceiverID != nil
+
+			if isNewMessage {
+
+				newGroupId, err := c.HandlerCreateNewGroup(c.Id, *req.ReceiverID)
+				if err != nil {
+					break
+				}
+
+				req.GroupID = &newGroupId
 			}
 
 			broadcast := &dto.BroadcastMessageWS{

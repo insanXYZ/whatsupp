@@ -15,12 +15,20 @@ type GroupRepository struct {
 func NewGroupRepository(db *gorm.DB) *GroupRepository {
 	return &GroupRepository{
 		repository: &repository[*entity.Group]{
-			DB: db,
+			db: db,
 		},
 	}
 }
 
-func (g *GroupRepository) SearchGroupAndUserWithName(ctx context.Context, userId int, name string) ([]dto.SearchGroupResponse, error) {
+func (gr *GroupRepository) WithTx(tx *gorm.DB) *GroupRepository {
+	return &GroupRepository{
+		repository: &repository[*entity.Group]{
+			db: tx,
+		},
+	}
+}
+
+func (gr *GroupRepository) SearchGroupAndUserWithName(ctx context.Context, userId int, name string) ([]dto.SearchGroupResponse, error) {
 	var userResults []dto.SearchGroupResponse
 	var groupResults []dto.SearchGroupResponse
 
@@ -50,7 +58,7 @@ func (g *GroupRepository) SearchGroupAndUserWithName(ctx context.Context, userId
         LIMIT 10
     `
 
-	err := g.DB.WithContext(ctx).Raw(userQuery, userId, searchPattern, userId).Scan(&userResults).Error
+	err := gr.db.WithContext(ctx).Raw(userQuery, userId, searchPattern, userId).Scan(&userResults).Error
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +78,7 @@ func (g *GroupRepository) SearchGroupAndUserWithName(ctx context.Context, userId
         LIMIT 10
     `
 
-	err = g.DB.WithContext(ctx).Raw(groupQuery, searchPattern).Scan(&groupResults).Error
+	err = gr.db.WithContext(ctx).Raw(groupQuery, searchPattern).Scan(&groupResults).Error
 	if err != nil {
 		return nil, err
 	}
@@ -78,4 +86,20 @@ func (g *GroupRepository) SearchGroupAndUserWithName(ctx context.Context, userId
 	results := append(userResults, groupResults...)
 
 	return results, nil
+}
+
+func (gr *GroupRepository) TakePrivateGroupBySenderAndReceiverId(ctx context.Context, senderId, receiverId int, dst *entity.Group) error {
+
+	rawQuery := `
+                SELECT *
+                FROM groups g
+                INNER JOIN members m1 ON m1.group_id = g.id
+                INNER JOIN members m2 ON m2.group_id = g.id
+                WHERE g.type = 'PERSONAL'
+                AND m1.user_id = ?
+                AND m2.user_id = ?
+                LIMIT 1
+	`
+
+	return gr.db.WithContext(ctx).Raw(rawQuery, senderId, receiverId).Scan(dst).Error
 }

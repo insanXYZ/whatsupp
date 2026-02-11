@@ -13,7 +13,7 @@ type MessageAttachmentRepository struct {
 func NewMessageAttachmentRepository(db *gorm.DB) *MessageAttachmentRepository {
 	return &MessageAttachmentRepository{
 		repository: &repository[*entity.MessageAttachment]{
-			DB: db,
+			db: db,
 		},
 	}
 }
@@ -21,7 +21,7 @@ func NewMessageAttachmentRepository(db *gorm.DB) *MessageAttachmentRepository {
 func (ma *MessageAttachmentRepository) WithTx(tx *gorm.DB) *MessageAttachmentRepository {
 	return &MessageAttachmentRepository{
 		repository: &repository[*entity.MessageAttachment]{
-			DB: tx,
+			db: tx,
 		},
 	}
 }

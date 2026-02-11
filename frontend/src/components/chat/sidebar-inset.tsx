@@ -54,7 +54,7 @@ export const AppSidebarInset = ({
 export const InsetHeaderGroup = (image: string, name: string) => {
   return (
     <div className="flex gap-5 items-center">
-      <Image src={image} width={30} height={30} alt={name} />
+      <Image src={image} width={28} height={28} alt={name} />
       <div>{name}</div>
     </div>
   );

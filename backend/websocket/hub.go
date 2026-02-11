@@ -53,7 +53,7 @@ func (h *Hub) Run() {
 			}
 		case message := <-h.broadcast:
 
-			clients, ok := h.groups[message.GroupID]
+			clients, ok := h.groups[*message.GroupID]
 			if !ok {
 				log.Println("error missing group id")
 				continue
