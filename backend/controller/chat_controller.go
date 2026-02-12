@@ -24,15 +24,13 @@ func (cc *ChatController) UpgradeWs(c *echo.Context) error {
 	ctx := c.Request().Context()
 	claims := util.GetClaims(c)
 
-	fmt.Println("incoming request upgrade ws")
-
 	err := cc.chatService.HandleUpgradeWs(ctx, claims, c.Response(), c.Request())
 	if err != nil {
 		fmt.Println("error ws:", err.Error())
 		return err
 	}
 
-	return util.ResponseOk(c, "upgrade connection success", nil)
+	return nil
 }
 
 func (cc *ChatController) UploadFileAttachments(c *echo.Context) error {

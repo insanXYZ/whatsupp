@@ -19,14 +19,28 @@ func NewMemberRepository(db *gorm.DB) *MemberRepository {
 	}
 }
 
-func (mr *MemberRepository) TakeByUserIdAndGroupId(ctx context.Context, userId, groupId int, dst *entity.Member) error {
-	return mr.db.WithContext(ctx).Where("user_id = ? AND group_id = ?", userId, groupId).Take(dst).Error
-}
-
 func (mr *MemberRepository) WithTx(tx *gorm.DB) *MemberRepository {
 	return &MemberRepository{
 		repository: &repository[*entity.Member]{
 			db: tx,
 		},
 	}
+}
+
+func (mr *MemberRepository) TakeByUserIdAndGroupId(ctx context.Context, userId, groupId int, dst *entity.Member) error {
+	query := `
+	SELECT * FROM members 
+	WHERE user_id = ? AND group_id = ?
+	`
+
+	tx := mr.db.WithContext(ctx).Raw(query, userId, groupId).Scan(dst)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	if tx.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }

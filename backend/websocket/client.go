@@ -5,7 +5,9 @@
 package websocket
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -41,11 +43,8 @@ var Upgrader = websocket.Upgrader{
 	},
 }
 
-// return int for message id on send attachment
-type HandlerSendMessage func(msg *dto.BroadcastMessageWS) (int, error)
-
-// return int for group id
-type HandlerCreateNewGroup func(senderId, receiverId int) (int, error)
+// returning messageId, groupId
+type HandlerIncomingMessage func(ctx context.Context, msg *dto.BroadcastMessageWS, hub *Hub) error
 
 // Client is a middleman between the websocket connection and the Hub.
 type Client struct {
@@ -60,9 +59,7 @@ type Client struct {
 	Send chan *dto.BroadcastMessageWS
 
 	// Handler for save message to db
-	HandlerSendMessage HandlerSendMessage
-
-	HandlerCreateNewGroup HandlerCreateNewGroup
+	HandlerIncomingMessage HandlerIncomingMessage
 }
 
 // readPump pumps messages from the websocket connection to the Hub.
@@ -89,23 +86,18 @@ func (c *Client) ReadPump() {
 
 		switch mt {
 		case websocket.TextMessage:
+			ctx := context.Background()
+
 			req := new(dto.MessageWS)
 			err = json.Unmarshal(message, req)
 			if err != nil {
-				log.Printf("error unmarshaling message: %v", err)
-				break
+				fmt.Println("error unmarshaling message:", err.Error())
+				continue
 			}
 
-			isNewMessage := req.ReceiverID != nil
-
-			if isNewMessage {
-
-				newGroupId, err := c.HandlerCreateNewGroup(c.Id, *req.ReceiverID)
-				if err != nil {
-					break
-				}
-
-				req.GroupID = &newGroupId
+			if req.GroupID == nil && req.ReceiverID == nil {
+				// handle missing group id or receiver id
+				continue
 			}
 
 			broadcast := &dto.BroadcastMessageWS{
@@ -113,13 +105,10 @@ func (c *Client) ReadPump() {
 				ClientID:  c.Id,
 			}
 
-			messageId, err := c.HandlerSendMessage(broadcast)
+			err := c.HandlerIncomingMessage(ctx, broadcast, c.Hub)
 			if err != nil {
-				log.Printf("error send message message: %v", err)
-				break
+				continue
 			}
-
-			broadcast.MessageID = messageId
 
 			c.Hub.broadcast <- broadcast
 		default:

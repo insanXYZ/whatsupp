@@ -55,7 +55,6 @@ func (gr *GroupRepository) SearchGroupAndUserWithName(ctx context.Context, userI
         FROM users u
         WHERE u.name ILIKE ?
         AND u.id != ?
-        LIMIT 10
     `
 
 	err := gr.db.WithContext(ctx).Raw(userQuery, userId, searchPattern, userId).Scan(&userResults).Error
@@ -75,7 +74,6 @@ func (gr *GroupRepository) SearchGroupAndUserWithName(ctx context.Context, userI
         FROM groups g
         WHERE g.name ILIKE ?
         AND g.type = 'GROUP'
-        LIMIT 10
     `
 
 	err = gr.db.WithContext(ctx).Raw(groupQuery, searchPattern).Scan(&groupResults).Error
@@ -101,5 +99,14 @@ func (gr *GroupRepository) TakePrivateGroupBySenderAndReceiverId(ctx context.Con
                 LIMIT 1
 	`
 
-	return gr.db.WithContext(ctx).Raw(rawQuery, senderId, receiverId).Scan(dst).Error
+	tx := gr.db.WithContext(ctx).Raw(rawQuery, senderId, receiverId).Scan(dst)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	if tx.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }

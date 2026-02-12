@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"database/sql/driver"
 	"time"
 )
 
@@ -12,14 +11,15 @@ const (
 	MEMBER typeMember = "MEMBER"
 )
 
-func (tg *typeMember) Scan(value any) error {
-	*tg = typeMember(value.([]byte))
-	return nil
-}
-
-func (tg typeMember) Value() (driver.Value, error) {
-	return string(tg), nil
-}
+//
+// func (tg *typeMember) Scan(value any) error {
+// 	*tg = typeMember(value.([]byte))
+// 	return nil
+// }
+//
+// func (tg typeMember) Value() (driver.Value, error) {
+// 	return string(tg), nil
+// }
 
 type Member struct {
 	ID       int        `gorm:"column:id;primaryKey,autoIncrement"`

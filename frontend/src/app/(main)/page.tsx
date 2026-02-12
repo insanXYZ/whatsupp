@@ -7,6 +7,7 @@ import {
 } from "@/components/chat/sidebar-content";
 import {
   AppSidebarInset,
+  InsetChat,
   InsetHeaderGroup,
 } from "@/components/chat/sidebar-inset";
 import { AppSidebarNavigation } from "@/components/chat/sidebar-navigation";
@@ -39,10 +40,22 @@ export default function Page() {
 
   const { mutate, isPending, isSuccess, data } = Mutation(["getGroups"]);
 
+  const handleSendMessage = (value: SendMessageRequest) => {
+    wsRef.current?.send(JSON.stringify(value));
+  };
+
   const handleGroupSelected = (group: GroupNavigationContent) => {
     setGroupId(group.id);
-
-    setSidebarInsetHeader(InsetHeaderGroup(group.image, group.name));
+    setSidebarInsetContent(
+      <InsetChat
+        handleSubmit={handleSendMessage}
+        groupId={group.group_id}
+        receiverId={group.id}
+      />,
+    );
+    setSidebarInsetHeader(
+      <InsetHeaderGroup image={group.image} name={group.name} />,
+    );
   };
 
   useEffect(() => {
@@ -80,6 +93,14 @@ export default function Page() {
 
     ws.onmessage = (ev) => {
       console.log("incoming message: ", ev.data);
+    };
+
+    ws.onclose = (ev) => {
+      console.log("close ws:", ev.reason);
+    };
+
+    ws.onerror = (ev) => {
+      console.log("error ws", ev);
     };
 
     return () => {

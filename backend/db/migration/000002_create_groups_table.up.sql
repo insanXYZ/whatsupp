@@ -11,15 +11,10 @@ CREATE TABLE IF NOT EXISTS groups (
   bio VARCHAR(100) NOT NULL,
   type type_group NOT NULL,
   image TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ,
   PRIMARY KEY(id)
 );
-
-CREATE TRIGGER trigger_set_created_at_group
-BEFORE INSERT ON groups
-FOR EACH ROW
-EXECUTE FUNCTION set_created_at();
 
 CREATE TRIGGER trigger_set_updated_at_group
 BEFORE UPDATE ON groups

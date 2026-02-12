@@ -14,3 +14,7 @@ migrate-down:
 
 migrate-version:
 	migrate -database $(URL_DB) -path db/migration/ version
+
+air:
+	rm -rf tmp
+	air

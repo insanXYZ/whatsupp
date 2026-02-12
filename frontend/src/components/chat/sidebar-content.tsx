@@ -1,4 +1,3 @@
-import Image from "next/image";
 import {
   Sidebar,
   SidebarContent,
@@ -46,26 +45,29 @@ export const RowsGroupChat = (
   contents: GroupNavigationContent[],
   onClick: (g: GroupNavigationContent) => any,
 ) => {
-  return contents.map((g) => (
-    <div
-      onClick={() => onClick(g)}
-      key={g.id}
-      className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
+  return (
+    contents &&
+    contents.map((g) => (
+      <div
+        onClick={() => onClick(g)}
+        key={g.id}
+        className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
              flex items-center gap-3 border-b p-4 text-sm leading-tight
              last:border-b-0 min-w-0"
-    >
-      <Avatar className="h-8 w-8 rounded-lg">
-        <AvatarImage src={g.image} alt={g.name} className="bg-gray-profile" />
-        <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-      </Avatar>
+      >
+        <Avatar className="h-8 w-8 rounded-lg">
+          <AvatarImage src={g.image} alt={g.name} className="bg-gray-profile" />
+          <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+        </Avatar>
 
-      <div className="flex min-w-0 flex-col gap-1">
-        <span className="font-medium truncate">{g.name}</span>
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="font-medium truncate">{g.name}</span>
 
-        <span className="line-clamp-2 text-xs wrap-break-word">
-          {g.bio ?? "~"}
-        </span>
+          <span className="line-clamp-2 text-xs wrap-break-word">
+            {g.bio ?? "~"}
+          </span>
+        </div>
       </div>
-    </div>
-  ));
+    ))
+  );
 };

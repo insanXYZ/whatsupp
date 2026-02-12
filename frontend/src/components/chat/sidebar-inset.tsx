@@ -1,16 +1,16 @@
-import { ReactNode } from "react";
+import { FormEvent, ReactNode, useState } from "react";
 import { Separator } from "../ui/separator";
 import { SidebarInset, SidebarTrigger } from "../ui/sidebar";
-import { Paperclip } from "lucide-react";
-import Image from "next/image";
+import { Paperclip, Send } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { ButtonLoading } from "../ui/button-loading";
 
-export const AppSidebarInset = ({
-  header,
-  content,
-}: {
-  header?: ReactNode;
-  content?: ReactNode;
-}) => {
+type AppSidebarInsetProps = {
+  header: ReactNode;
+  content: ReactNode;
+};
+
+export const AppSidebarInset = ({ header, content }: AppSidebarInsetProps) => {
   return (
     <SidebarInset>
       <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4">
@@ -21,41 +21,80 @@ export const AppSidebarInset = ({
         />
         {header}
       </header>
-      {/* <div className="flex flex-1 flex-col gap-4 p-4">{content}</div> */}
-      <div className="relative flex flex-1 flex-col p-4">
-        {/* chat list */}
-        <div className="flex-1 overflow-y-auto pb-20 flex flex-col gap-4">
-          <div className="flex justify-start">
-            <div className="bg-blue-200 max-w-2/3 rounded p-2">
-              Lorem ipsum dolor sit amet...
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <div className="bg-green-200 max-w-2/3 rounded p-2">
-              Lorem ipsum dolor sit amet...
-            </div>
-          </div>
-        </div>
-
-        {/* input chat */}
-        <div className="absolute flex items-center gap-5 bottom-0 left-0 right-0 bg-background border-t p-4">
-          <Paperclip />
-          <input
-            className="w-full rounded-md border px-3 py-2"
-            placeholder="Ketik pesan..."
-          />
-        </div>
-      </div>
+      <div className="flex flex-1 flex-col gap-4 p-4">{content}</div>
     </SidebarInset>
   );
 };
 
-export const InsetHeaderGroup = (image: string, name: string) => {
+type InsetHeaderGroupProps = {
+  image: string;
+  name: string;
+};
+
+export const InsetHeaderGroup = ({ image, name }: InsetHeaderGroupProps) => {
   return (
     <div className="flex gap-5 items-center">
-      <Image src={image} width={28} height={28} alt={name} />
+      <Avatar className="h-7 w-7 rounded-lg">
+        <AvatarImage src={image} alt={name} className="bg-gray-profile" />
+        <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+      </Avatar>
       <div>{name}</div>
     </div>
+  );
+};
+
+type InsetChatProps = {
+  groupId?: number;
+  receiverId?: number;
+  handleSubmit: (v: SendMessageRequest) => any;
+};
+
+export const InsetChat = ({
+  groupId,
+  receiverId,
+  handleSubmit,
+}: InsetChatProps) => {
+  const [message, setMessage] = useState<string>("");
+
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleSubmit({
+      group_id: groupId,
+      receiver_id: receiverId,
+      message: message,
+    });
+  };
+
+  return (
+    <>
+      <div className="flex-1 overflow-y-auto pb-20 flex flex-col gap-4">
+        <div className="flex justify-start">
+          <div className="bg-blue-200 max-w-2/3 rounded p-2">
+            Lorem ipsum dolor sit amet... {groupId}
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <div className="bg-green-200 max-w-2/3 rounded p-2">
+            Lorem ipsum dolor sit amet... {receiverId}
+          </div>
+        </div>
+      </div>
+
+      <form
+        onSubmit={onSubmit}
+        className="absolute flex items-center gap-5 bottom-0 left-0 right-0 bg-background border-t p-4"
+      >
+        <Paperclip />
+        <input
+          onChange={(v) => setMessage(v.target.value)}
+          className="w-full rounded-md border px-3 py-2"
+          placeholder="Write message..."
+        />
+        <ButtonLoading className="p-5 " isPending={false}>
+          <Send />
+        </ButtonLoading>
+      </form>
+    </>
   );
 };

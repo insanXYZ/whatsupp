@@ -5,6 +5,7 @@
 package websocket
 
 import (
+	"fmt"
 	"log"
 	"whatsupp-backend/dto"
 )
@@ -37,8 +38,18 @@ func NewHub() *Hub {
 	}
 }
 
+func (h *Hub) CreateGroup(groupId int, members []int) {
+	membersMap := make(map[int]bool)
+	for _, v := range members {
+		membersMap[v] = true
+	}
+
+	h.groups[groupId] = membersMap
+}
+
 func (h *Hub) Register(client *Client) {
 	h.register <- client
+	fmt.Println("success register client with id:", client.Id)
 }
 
 func (h *Hub) Run() {
