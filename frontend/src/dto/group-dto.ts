@@ -1,4 +1,4 @@
-export interface SearchGroupResponse {
+export interface RowsGroups {
   type: string;
   id: number;
   name: string;
@@ -8,4 +8,6 @@ export interface SearchGroupResponse {
   group_id?: number;
 }
 
-export type GroupNavigationContent = SearchGroupResponse;
+export type SearchGroupResponse = RowsGroups;
+
+export type RecentGroupsResponse = RowsGroups;

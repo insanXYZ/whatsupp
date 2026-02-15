@@ -5,3 +5,31 @@ interface GetMeResponse {
   email: string;
   bio: string;
 }
+
+interface UserEntity {
+  bio: string;
+  email: string;
+  id: number;
+  image: string;
+  name: string;
+}
+
+interface MemberEntity {
+  id: number;
+  group_id: number;
+  user_id: number;
+  role: string;
+  user: UserEntity;
+}
+
+interface MessageEntity {
+  id: number;
+  member_id: number;
+  message: string;
+  created_at: string;
+  member: MemberEntity;
+}
+
+interface GetMessageResponse extends MessageEntity {
+  is_me: boolean;
+}

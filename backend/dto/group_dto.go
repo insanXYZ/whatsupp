@@ -1,10 +1,10 @@
 package dto
 
 type Group struct {
-	ID          int    `json:"id,omitempty"`
-	Name        string `json:"name,omitempty"`
-	Description string `json:"description,omitempty"`
-	Type        string `json:"type,omitempty"`
+	ID   int    `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
+	Bio  string `json:"bio,omitempty"`
+	Type string `json:"type,omitempty"`
 }
 
 type SearchGroupRequest struct {
@@ -20,3 +20,5 @@ type SearchGroupResponse struct {
 	GroupType *string `json:"group_type,omitempty"`
 	GroupID   *int    `json:"group_id"`
 }
+
+type LoadRecentGroup = SearchGroupResponse

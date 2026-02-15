@@ -44,3 +44,7 @@ func (mr *MemberRepository) TakeByUserIdAndGroupId(ctx context.Context, userId, 
 
 	return nil
 }
+
+func (mr *MemberRepository) FindByUserId(ctx context.Context, userId int, members []*entity.Member) error {
+	return mr.db.WithContext(ctx).Where("user_id = ?", userId).Find(members).Error
+}

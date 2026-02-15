@@ -8,7 +8,7 @@ type MessageAttachment struct {
 	FileURL   string    `gorm:"column:file_url"`
 	FileExt   string    `gorm:"column:file_type"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
-	Message   *Message  `gorm:"foreignKey:message_id;references:id"`
+	Message   *Message  `gorm:"foreignKey:MessageID;references:ID"`
 }
 
 func (MessageAttachment) TableName() string {

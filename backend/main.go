@@ -46,21 +46,21 @@ func main() {
 
 	// init service
 
-	chatService := service.NewChatService(validator, groupRepository, memberRepository, messageRepository, messageAttachmentRepository, userRepository, hub, clientStorage)
+	messageService := service.NewMessageService(validator, groupRepository, memberRepository, messageRepository, messageAttachmentRepository, userRepository, hub, clientStorage)
 	userService := service.NewUserService(validator, userRepository)
-	groupService := service.NewGroupService(validator, userRepository, groupRepository)
+	groupService := service.NewGroupService(validator, memberRepository, groupRepository)
 
 	// init controller
 
-	chatController := controller.NewChatController(chatService)
+	messageController := controller.NewChatController(messageService)
 	userController := controller.NewUserController(userService)
 	groupController := controller.NewGroupController(groupService)
 
 	SetRoute(&RouteConfig{
-		userController:  userController,
-		chatController:  chatController,
-		groupController: groupController,
-		app:             app,
+		userController:    userController,
+		messageController: messageController,
+		groupController:   groupController,
+		app:               app,
 	})
 
 	err = app.Start(fmt.Sprintf(":%s", os.Getenv("APP_PORT")))

@@ -1,25 +1,15 @@
 package entity
 
 import (
-	"database/sql/driver"
 	"time"
 )
 
-type typeGroup string
+type typeGroup = string
 
 const (
 	GROUP    typeGroup = "GROUP"
 	PERSONAL typeGroup = "PERSONAL"
 )
-
-func (tg *typeGroup) Scan(value any) error {
-	*tg = typeGroup(value.([]byte))
-	return nil
-}
-
-func (tg typeGroup) Value() (driver.Value, error) {
-	return string(tg), nil
-}
 
 type Group struct {
 	ID        int       `gorm:"column:id;primaryKey,autoIncrement"`
@@ -28,5 +18,5 @@ type Group struct {
 	GroupType typeGroup `gorm:"column:type;type:type_group"`
 	Image     string    `gorm:"column:image"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
-	Members   []Member  `gorm:"foreignKey:group_id;references:id"`
+	Members   []Member  `gorm:"foreignKey:GroupId;references:ID"`
 }

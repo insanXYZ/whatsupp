@@ -11,7 +11,7 @@ export const NAV_TITLE_CHAT = "Chat",
   NAV_TITLE_FRIEND = "Friend",
   NAV_TITLE_Setting = "Setting";
 
-export const Navigation: NavMain[] = [
+export const Navigations: NavMain[] = [
   {
     title: "Chat",
     icon: Inbox,

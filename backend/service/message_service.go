@@ -20,7 +20,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type ChatService struct {
+type MessageService struct {
 	validator                   *validator.Validate
 	groupRepository             *repository.GroupRepository
 	memberRepository            *repository.MemberRepository
@@ -31,7 +31,7 @@ type ChatService struct {
 	storage                     *storage_go.Client
 }
 
-func NewChatService(
+func NewMessageService(
 	validator *validator.Validate,
 	groupRepository *repository.GroupRepository,
 	memberRepository *repository.MemberRepository,
@@ -40,8 +40,8 @@ func NewChatService(
 	userRepository *repository.UserRepository,
 	hub *websocket.Hub,
 	storage *storage_go.Client,
-) *ChatService {
-	return &ChatService{
+) *MessageService {
+	return &MessageService{
 		userRepository:              userRepository,
 		storage:                     storage,
 		hub:                         hub,
@@ -53,7 +53,7 @@ func NewChatService(
 	}
 }
 
-func (cs *ChatService) HandleUpgradeWs(ctx context.Context, claims *util.Claims, w http.ResponseWriter, r *http.Request) error {
+func (cs *MessageService) HandleUpgradeWs(ctx context.Context, claims *util.Claims, w http.ResponseWriter, r *http.Request) error {
 	ws, err := websocket.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return err
@@ -77,7 +77,7 @@ func (cs *ChatService) HandleUpgradeWs(ctx context.Context, claims *util.Claims,
 	return nil
 }
 
-func (cs *ChatService) HandleUploadFileAttachments(ctx context.Context, messageID string, files []*multipart.FileHeader) error {
+func (cs *MessageService) HandleUploadFileAttachments(ctx context.Context, messageID string, files []*multipart.FileHeader) error {
 
 	return cs.messageAttachmentRepository.Transaction(ctx, func(tx *gorm.DB) error {
 
@@ -132,7 +132,7 @@ func (cs *ChatService) HandleUploadFileAttachments(ctx context.Context, messageI
 }
 
 // returning messageId, groupId, error
-func (cs *ChatService) handleIncomingMessage(ctx context.Context, msg *dto.BroadcastMessageWS, hub *websocket.Hub) error {
+func (cs *MessageService) handleIncomingMessage(ctx context.Context, msg *dto.BroadcastMessageWS, hub *websocket.Hub) error {
 	err := cs.messageRepository.Transaction(ctx, func(tx *gorm.DB) error {
 
 		groupTx := cs.groupRepository.WithTx(tx)
@@ -146,7 +146,7 @@ func (cs *ChatService) handleIncomingMessage(ctx context.Context, msg *dto.Broad
 
 			group := new(entity.Group)
 
-			err := groupTx.TakePrivateGroupBySenderAndReceiverId(ctx, msg.ClientID, *msg.ReceiverID, group)
+			err := groupTx.TakePersonalGroupBySenderAndReceiverId(ctx, msg.ClientID, *msg.ReceiverID, group)
 			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
 			}
@@ -196,6 +196,8 @@ func (cs *ChatService) handleIncomingMessage(ctx context.Context, msg *dto.Broad
 				group = newGroup
 
 				msg.GroupID = &group.ID
+
+				hub.CreateGroup(*msg.GroupID, []int{msg.ClientID, *msg.GroupID})
 			}
 
 		}
@@ -221,7 +223,14 @@ func (cs *ChatService) handleIncomingMessage(ctx context.Context, msg *dto.Broad
 		return nil
 	})
 
-	fmt.Println(err)
-
 	return err
+}
+
+func (ms *MessageService) HandleGetMessages(ctx context.Context, groupId int, claims *util.Claims) ([]*entity.Message, error) {
+	_, err := ms.groupRepository.TakeGroupWithGroupIdAndUserId(ctx, groupId, claims.Sub)
+	if err != nil {
+		return nil, err
+	}
+
+	return ms.messageRepository.GetMessages(ctx, groupId)
 }

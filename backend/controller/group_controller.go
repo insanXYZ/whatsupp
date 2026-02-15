@@ -19,7 +19,7 @@ func NewGroupController(groupService *service.GroupService) *GroupController {
 	}
 }
 
-func (g *GroupController) Lists(c *echo.Context) error {
+func (gc *GroupController) Lists(c *echo.Context) error {
 	ctx := c.Request().Context()
 	claims := util.GetClaims(c)
 	req := new(dto.SearchGroupRequest)
@@ -28,10 +28,22 @@ func (g *GroupController) Lists(c *echo.Context) error {
 		return util.ResponseErr(c, message.ERR_LIST_GROUPS, err)
 	}
 
-	results, err := g.groupService.HandleLists(ctx, claims, req)
+	results, err := gc.groupService.HandleFindGroups(ctx, claims, req)
 	if err != nil {
 		return util.ResponseErr(c, message.ERR_LIST_GROUPS, err)
 	}
 
-	return util.ResponseOk(c, message.ERR_LIST_GROUPS, results)
+	return util.ResponseOk(c, message.SUCCESS_LIST_GROUPS, results)
+}
+
+func (gc *GroupController) LoadRecentGroups(c *echo.Context) error {
+	ctx := c.Request().Context()
+	claims := util.GetClaims(c)
+
+	recentGroups, err := gc.groupService.HandleLoadRecentGroups(ctx, claims)
+	if err != nil {
+		return util.ResponseErr(c, message.ERR_LIST_RECENT_GROUPS, err)
+	}
+
+	return util.ResponseOk(c, message.SUCCESS_LIST_RECENT_GROUPS, recentGroups)
 }

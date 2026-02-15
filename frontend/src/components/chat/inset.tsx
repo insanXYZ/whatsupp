@@ -1,13 +1,13 @@
 import { FormEvent, ReactNode, useState } from "react";
-import { Separator } from "../ui/separator";
 import { SidebarInset, SidebarTrigger } from "../ui/sidebar";
-import { Paperclip, Send } from "lucide-react";
+import { Separator } from "../ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Paperclip, Send } from "lucide-react";
 import { ButtonLoading } from "../ui/button-loading";
 
 type AppSidebarInsetProps = {
-  header: ReactNode;
-  content: ReactNode;
+  header?: ReactNode;
+  content?: ReactNode;
 };
 
 export const AppSidebarInset = ({ header, content }: AppSidebarInsetProps) => {
@@ -31,7 +31,10 @@ type InsetHeaderGroupProps = {
   name: string;
 };
 
-export const InsetHeaderGroup = ({ image, name }: InsetHeaderGroupProps) => {
+export const InsetHeaderGroupProfile = ({
+  image,
+  name,
+}: InsetHeaderGroupProps) => {
   return (
     <div className="flex gap-5 items-center">
       <Avatar className="h-7 w-7 rounded-lg">
@@ -46,19 +49,21 @@ export const InsetHeaderGroup = ({ image, name }: InsetHeaderGroupProps) => {
 type InsetChatProps = {
   groupId?: number;
   receiverId?: number;
-  handleSubmit: (v: SendMessageRequest) => any;
+  messages: GetMessageResponse[];
+  onSubmit: (v: SendMessageRequest) => any;
 };
 
 export const InsetChat = ({
   groupId,
   receiverId,
-  handleSubmit,
+  messages,
+  onSubmit,
 }: InsetChatProps) => {
   const [message, setMessage] = useState<string>("");
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    handleSubmit({
+    onSubmit({
       group_id: groupId,
       receiver_id: receiverId,
       message: message,
@@ -68,21 +73,25 @@ export const InsetChat = ({
   return (
     <>
       <div className="flex-1 overflow-y-auto pb-20 flex flex-col gap-4">
-        <div className="flex justify-start">
-          <div className="bg-blue-200 max-w-2/3 rounded p-2">
-            Lorem ipsum dolor sit amet... {groupId}
-          </div>
-        </div>
-
-        <div className="flex justify-end">
-          <div className="bg-green-200 max-w-2/3 rounded p-2">
-            Lorem ipsum dolor sit amet... {receiverId}
-          </div>
-        </div>
+        {messages?.map((v) =>
+          v.is_me ? (
+            <div className="flex justify-start">
+              <div className="bg-blue-200 max-w-2/3 rounded p-2">
+                {v.message}
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-end">
+              <div className="bg-green-200 max-w-2/3 rounded p-2">
+                {v.message}
+              </div>
+            </div>
+          ),
+        )}
       </div>
 
       <form
-        onSubmit={onSubmit}
+        onSubmit={handleSubmit}
         className="absolute flex items-center gap-5 bottom-0 left-0 right-0 bg-background border-t p-4"
       >
         <Paperclip />
