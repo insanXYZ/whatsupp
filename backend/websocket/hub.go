@@ -38,6 +38,12 @@ func NewHub() *Hub {
 }
 
 func (h *Hub) CreateGroup(groupId int, members []int) {
+	_, exist := h.groups[groupId]
+
+	if exist {
+		return
+	}
+
 	membersMap := make(map[int]bool)
 	for _, v := range members {
 		membersMap[v] = true
@@ -48,6 +54,11 @@ func (h *Hub) CreateGroup(groupId int, members []int) {
 
 func (h *Hub) Register(client *Client) {
 	h.register <- client
+}
+
+func (h *Hub) IsExistGroup(groupId int) bool {
+	_, exist := h.groups[groupId]
+	return exist
 }
 
 func (h *Hub) Run() {

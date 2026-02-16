@@ -30,6 +30,11 @@ type GetMessageRequest struct {
 }
 
 type GetMessagesResponse struct {
-	IsMe bool `json:"is_me,omitempty"`
+	GroupId  int                        `json:"group_id,omitempty"`
+	Messages []*ItemGetMessagesResponse `json:"messages,omitempty"`
+}
+
+type ItemGetMessagesResponse struct {
+	IsMe bool `json:"is_me"`
 	Message
 }

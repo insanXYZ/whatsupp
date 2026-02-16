@@ -49,7 +49,7 @@ export const InsetHeaderGroupProfile = ({
 type InsetChatProps = {
   groupId?: number;
   receiverId?: number;
-  messages: GetMessageResponse[];
+  messages: ItemGetMessageResponse[];
   onSubmit: (v: SendMessageRequest) => any;
 };
 
@@ -75,13 +75,13 @@ export const InsetChat = ({
       <div className="flex-1 overflow-y-auto pb-20 flex flex-col gap-4">
         {messages?.map((v) =>
           v.is_me ? (
-            <div className="flex justify-start">
+            <div key={v.id} className="flex justify-end">
               <div className="bg-blue-200 max-w-2/3 rounded p-2">
                 {v.message}
               </div>
             </div>
           ) : (
-            <div className="flex justify-end">
+            <div key={v.id} className="flex justify-start">
               <div className="bg-green-200 max-w-2/3 rounded p-2">
                 {v.message}
               </div>

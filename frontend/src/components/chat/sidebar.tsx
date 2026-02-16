@@ -16,22 +16,22 @@ import { useDebounce } from "use-debounce";
 import { HttpMethod, Mutation, useQueryData } from "@/utils/tanstack";
 import {
   RecentGroupsResponse,
-  RowsGroups,
+  RowGroupChat,
   SearchGroupResponse,
 } from "@/dto/group-dto";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
-export const AppSidebar = () => {
+type AppSidebarProps = {
+  onClickGroupChat: (v: RowGroupChat) => void;
+};
+
+export const AppSidebar = ({ onClickGroupChat }: AppSidebarProps) => {
   const [activeItem, setActiveItem] = useState<string>(NAV_TITLE_CHAT);
   const [search, setSearch] = useState<string>("");
   const [searchDebounce] = useDebounce(search, 600);
 
   // sidebar detail
   const [content, setContent] = useState<ReactNode>(null);
-
-  const onClickGroups = (v: RowsGroups) => {
-    console.log(v);
-  };
 
   const { data: dataGetMessages, isSuccess: successGetMessages } = useQueryData(
     ["getMessages"],
@@ -48,7 +48,7 @@ export const AppSidebar = () => {
     if (successGetMessages && dataGetMessages.data) {
       const recentGroups = dataGetMessages.data as RecentGroupsResponse[];
 
-      setContent(renderRecentGroupRows(recentGroups, onClickGroups));
+      setContent(renderRowsGroupChat(recentGroups, onClickGroupChat));
     }
   }, [successGetMessages]);
 
@@ -56,7 +56,7 @@ export const AppSidebar = () => {
     if (successGetGroups && dataGetGroups.data) {
       const groups = dataGetGroups.data as SearchGroupResponse[];
 
-      setContent(renderRecentGroupRows(groups, onClickGroups));
+      setContent(renderRowsGroupChat(groups, onClickGroupChat));
     }
   }, [successGetGroups]);
 
@@ -188,7 +188,7 @@ const SidebarDetail = ({ title, content, onSearch }: SidebarDetailProps) => {
   );
 };
 
-export const renderRecentGroupRows = (
+export const renderRowsGroupChat = (
   groups: RecentGroupsResponse[],
   onClick: (r: RecentGroupsResponse) => any,
 ) => {

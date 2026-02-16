@@ -18,7 +18,7 @@ func MessageEntityToDto(message *entity.Message) *dto.Message {
 	}
 }
 
-func MessageEntitytoGetMessageResponseDto(message *entity.Message, userId int) *dto.GetMessagesResponse {
+func MessageEntitytoItemGetMessagesResponseDto(message *entity.Message, userId int) *dto.ItemGetMessagesResponse {
 
 	messageDto := MessageEntityToDto(message)
 
@@ -26,7 +26,7 @@ func MessageEntitytoGetMessageResponseDto(message *entity.Message, userId int) *
 		return nil
 	}
 
-	return &dto.GetMessagesResponse{
+	return &dto.ItemGetMessagesResponse{
 		IsMe:    messageDto.Member.User.ID == userId,
 		Message: *messageDto,
 	}

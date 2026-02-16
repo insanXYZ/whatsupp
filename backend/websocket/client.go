@@ -105,6 +105,9 @@ func (c *Client) ReadPump() {
 				ClientID:  c.Id,
 			}
 
+			b, _ := json.MarshalIndent(broadcast, "", " ")
+			fmt.Println(string(b))
+
 			err := c.HandlerIncomingMessage(ctx, broadcast, c.Hub)
 			if err != nil {
 				continue

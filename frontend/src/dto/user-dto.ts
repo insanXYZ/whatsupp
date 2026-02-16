@@ -30,6 +30,11 @@ interface MessageEntity {
   member: MemberEntity;
 }
 
-interface GetMessageResponse extends MessageEntity {
+interface GetMessageResponse {
+  group_id: number;
+  messages: ItemGetMessageResponse[];
+}
+
+interface ItemGetMessageResponse extends MessageEntity {
   is_me: boolean;
 }

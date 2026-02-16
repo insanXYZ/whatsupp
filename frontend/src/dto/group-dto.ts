@@ -1,4 +1,4 @@
-export interface RowsGroups {
+export interface RowGroupChat {
   type: string;
   id: number;
   name: string;
@@ -8,6 +8,6 @@ export interface RowsGroups {
   group_id?: number;
 }
 
-export type SearchGroupResponse = RowsGroups;
+export type SearchGroupResponse = RowGroupChat;
 
-export type RecentGroupsResponse = RowsGroups;
+export type RecentGroupsResponse = RowGroupChat;

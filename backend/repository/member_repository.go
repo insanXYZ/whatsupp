@@ -48,3 +48,20 @@ func (mr *MemberRepository) TakeByUserIdAndGroupId(ctx context.Context, userId, 
 func (mr *MemberRepository) FindByUserId(ctx context.Context, userId int, members []*entity.Member) error {
 	return mr.db.WithContext(ctx).Where("user_id = ?", userId).Find(members).Error
 }
+
+func (mr *MemberRepository) GetUserIdsWithGroupId(ctx context.Context, groupId int) ([]int, error) {
+	var members []*entity.Member
+
+	err := mr.db.WithContext(ctx).Select("user_id").Where("group_id = ?", groupId).Find(&members).Error
+	if err != nil {
+		return nil, err
+	}
+
+	userIds := make([]int, len(members))
+
+	for i, member := range members {
+		userIds[i] = member.UserID
+	}
+
+	return userIds, nil
+}
