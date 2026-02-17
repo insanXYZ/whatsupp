@@ -18,7 +18,7 @@ type Hub struct {
 	clients map[int]*Client
 
 	// Inbound messages from the clients.
-	broadcast chan *dto.BroadcastMessageWS
+	broadcast chan *dto.BroadcastMessageWs
 
 	// Register requests from the clients.
 	register chan *Client
@@ -31,7 +31,7 @@ func NewHub() *Hub {
 	return &Hub{
 		groups:     make(map[int]map[int]bool),
 		clients:    make(map[int]*Client),
-		broadcast:  make(chan *dto.BroadcastMessageWS),
+		broadcast:  make(chan *dto.BroadcastMessageWs),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 	}
@@ -65,21 +65,21 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
-			h.clients[client.Id] = client
+			h.clients[client.User.ID] = client
 		case client := <-h.unregister:
-			if _, ok := h.clients[client.Id]; ok {
-				delete(h.clients, client.Id)
+			if _, ok := h.clients[client.User.ID]; ok {
+				delete(h.clients, client.User.ID)
 				close(client.Send)
 			}
 		case message := <-h.broadcast:
 
-			clients, ok := h.groups[*message.GroupID]
+			clients, ok := h.groups[*message.Request.GroupID]
 			if !ok {
 				log.Println("error missing group id")
 				continue
 			}
 
-			isMember := clients[message.ClientID]
+			isMember := clients[message.User.ID]
 
 			if !isMember {
 				log.Println("error is not member")

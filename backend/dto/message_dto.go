@@ -1,24 +1,27 @@
 package dto
 
-import "time"
+import (
+	"time"
+	"whatsupp-backend/entity"
+)
 
 type Message struct {
 	ID        int       `json:"id,omitempty"`
 	Message   string    `json:"message,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
 	Member    *Member   `json:"member,omitempty"`
 }
 
-type MessageWS struct {
+type MessageWsRequest struct {
 	Message    string `json:"message,omitempty"`
 	GroupID    *int   `json:"group_id,omitempty"`
 	ReceiverID *int   `json:"receiver_id,omitempty"`
 }
 
-type BroadcastMessageWS struct {
-	*MessageWS
-	ClientID  int
-	MessageID int
+type BroadcastMessageWs struct {
+	Request *MessageWsRequest
+	Message *entity.Message
+	User    *entity.User
 }
 
 type SyncMessageWS struct {

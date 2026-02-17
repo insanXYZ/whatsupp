@@ -85,10 +85,22 @@ export default function Page() {
       });
 
     wsRef.current = ConnectWS({
-      onClose: null,
-      onError: null,
+      onClose: (v) => {
+        console.log("close ", v);
+        setConnect(false);
+      },
+      onError: (v) => {
+        console.log("error ", v);
+      },
       onMessage: (v) => {
-        console.log(v.data);
+        const data = JSON.parse(v.data) as GetMessageResponse;
+        const newMessages = data.messages;
+        const chatKey = `group-${data.group_id}`;
+
+        setMessagesByChatKey((prev) => ({
+          ...prev,
+          [chatKey]: [...(prev[chatKey] ?? []), ...newMessages],
+        }));
       },
       onOpen: () => {
         setConnect(true);

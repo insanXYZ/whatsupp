@@ -12,6 +12,9 @@ import (
 	"net/http"
 	"time"
 	"whatsupp-backend/dto"
+	"whatsupp-backend/dto/converter"
+	"whatsupp-backend/entity"
+	"whatsupp-backend/util"
 
 	"github.com/gorilla/websocket"
 )
@@ -44,11 +47,11 @@ var Upgrader = websocket.Upgrader{
 }
 
 // returning messageId, groupId
-type HandlerIncomingMessage func(ctx context.Context, msg *dto.BroadcastMessageWS, hub *Hub) error
+type HandlerIncomingMessage func(ctx context.Context, msg *dto.BroadcastMessageWs, hub *Hub) error
 
 // Client is a middleman between the websocket connection and the Hub.
 type Client struct {
-	Id int
+	User *entity.User
 
 	Hub *Hub
 
@@ -56,7 +59,7 @@ type Client struct {
 	Conn *websocket.Conn
 
 	// Buffered channel of outbound messages.
-	Send chan *dto.BroadcastMessageWS
+	Send chan *dto.BroadcastMessageWs
 
 	// Handler for save message to db
 	HandlerIncomingMessage HandlerIncomingMessage
@@ -88,28 +91,29 @@ func (c *Client) ReadPump() {
 		case websocket.TextMessage:
 			ctx := context.Background()
 
-			req := new(dto.MessageWS)
+			req := new(dto.MessageWsRequest)
 			err = json.Unmarshal(message, req)
 			if err != nil {
 				fmt.Println("error unmarshaling message:", err.Error())
 				continue
 			}
 
+			request, _ := util.MarshalIndent(req)
+			fmt.Println(request)
+
 			if req.GroupID == nil && req.ReceiverID == nil {
 				// handle missing group id or receiver id
 				continue
 			}
 
-			broadcast := &dto.BroadcastMessageWS{
-				MessageWS: req,
-				ClientID:  c.Id,
+			broadcast := &dto.BroadcastMessageWs{
+				Request: req,
+				User:    c.User,
 			}
-
-			b, _ := json.MarshalIndent(broadcast, "", " ")
-			fmt.Println(string(b))
 
 			err := c.HandlerIncomingMessage(ctx, broadcast, c.Hub)
 			if err != nil {
+				fmt.Println("error handling incoming message:", err.Error())
 				continue
 			}
 
@@ -148,7 +152,14 @@ func (c *Client) WritePump() {
 				return
 			}
 
-			msgByte, err := json.Marshal(message)
+			response := &dto.GetMessagesResponse{
+				GroupId: *message.Request.GroupID,
+				Messages: []*dto.ItemGetMessagesResponse{
+					converter.MessageEntitytoItemGetMessagesResponseDto(message.Message, c.User.ID),
+				},
+			}
+
+			msgByte, err := json.Marshal(response)
 			if err != nil {
 				log.Println("error marshal message on writepump, ", err.Error())
 				return
@@ -159,7 +170,19 @@ func (c *Client) WritePump() {
 			// Add queued chat messages to the current websocket message.
 			n := len(c.Send)
 			for range n {
-				msgByte, err := json.Marshal(<-c.Send)
+				message, ok := <-c.Send
+				if !ok {
+					continue
+				}
+
+				response := &dto.GetMessagesResponse{
+					GroupId: *message.Request.GroupID,
+					Messages: []*dto.ItemGetMessagesResponse{
+						converter.MessageEntitytoItemGetMessagesResponseDto(message.Message, message.User.ID),
+					},
+				}
+
+				msgByte, err := json.Marshal(response)
 				if err != nil {
 					continue
 				}

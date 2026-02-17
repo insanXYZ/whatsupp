@@ -2,12 +2,8 @@ package repository
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"time"
 	"whatsupp-backend/dto"
 	"whatsupp-backend/entity"
-	"whatsupp-backend/storage"
 
 	"gorm.io/gorm"
 )
@@ -174,26 +170,4 @@ func (gr *GroupRepository) FindAllGroupWithMemberUserId(
 	}
 
 	return result, nil
-}
-
-func (gr *GroupRepository) TakeOrCreatePersonalGroup(ctx context.Context, senderId, receiverId int) (*entity.Group, error) {
-	group := new(entity.Group)
-	err := gr.TakePersonalGroupBySenderAndReceiverId(ctx, senderId, receiverId, group)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
-	}
-
-	if err == nil {
-		return group, nil
-	}
-
-	newGroup := &entity.Group{
-		Bio:       "~",
-		Name:      fmt.Sprintf("%s-%d", entity.PERSONAL, time.Now().Unix()),
-		Image:     storage.DEFAULT_GROUP_PROFILE_PICTURE_URL,
-		GroupType: entity.PERSONAL,
-	}
-
-	err = gr.Create(ctx, newGroup)
-	return newGroup, err
 }

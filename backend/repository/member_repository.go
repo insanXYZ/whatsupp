@@ -28,21 +28,8 @@ func (mr *MemberRepository) WithTx(tx *gorm.DB) *MemberRepository {
 }
 
 func (mr *MemberRepository) TakeByUserIdAndGroupId(ctx context.Context, userId, groupId int, dst *entity.Member) error {
-	query := `
-	SELECT * FROM members 
-	WHERE user_id = ? AND group_id = ?
-	`
-
-	tx := mr.db.WithContext(ctx).Raw(query, userId, groupId).Scan(dst)
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	if tx.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-
-	return nil
+	err := mr.db.WithContext(ctx).Take(dst, "user_id = ? AND group_id = ?", userId, groupId).Error
+	return err
 }
 
 func (mr *MemberRepository) FindByUserId(ctx context.Context, userId int, members []*entity.Member) error {
@@ -55,6 +42,10 @@ func (mr *MemberRepository) GetUserIdsWithGroupId(ctx context.Context, groupId i
 	err := mr.db.WithContext(ctx).Select("user_id").Where("group_id = ?", groupId).Find(&members).Error
 	if err != nil {
 		return nil, err
+	}
+
+	if len(members) == 0 {
+		return nil, gorm.ErrRecordNotFound
 	}
 
 	userIds := make([]int, len(members))

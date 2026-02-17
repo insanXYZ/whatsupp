@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -53,18 +54,24 @@ func NewMessageService(
 }
 
 func (cs *MessageService) HandleUpgradeWs(ctx context.Context, claims *util.Claims, w http.ResponseWriter, r *http.Request) error {
+	userId := claims.Sub
+
+	user := new(entity.User)
+	err := cs.userRepository.TakeById(ctx, user, userId)
+	if err != nil {
+		return err
+	}
+
 	ws, err := websocket.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return err
 	}
 
-	userId := claims.Sub
-
 	client := &websocket.Client{
-		Id:                     userId,
+		User:                   user,
 		Hub:                    cs.hub,
 		Conn:                   ws,
-		Send:                   make(chan *dto.BroadcastMessageWS, 250),
+		Send:                   make(chan *dto.BroadcastMessageWs, 250),
 		HandlerIncomingMessage: cs.handleIncomingMessage,
 	}
 
@@ -132,7 +139,7 @@ func (cs *MessageService) HandleUploadFileAttachments(ctx context.Context, messa
 
 func (ms *MessageService) handleIncomingMessage(
 	ctx context.Context,
-	msg *dto.BroadcastMessageWS,
+	bc *dto.BroadcastMessageWs,
 	hub *websocket.Hub,
 ) error {
 
@@ -142,59 +149,94 @@ func (ms *MessageService) handleIncomingMessage(
 		memberTx := ms.memberRepository.WithTx(tx)
 		messageTx := ms.messageRepository.WithTx(tx)
 
-		if msg.GroupID == nil {
+		if bc.Request.GroupID == nil {
 
-			group, err := groupTx.TakeOrCreatePersonalGroup(
-				ctx,
-				msg.ClientID,
-				*msg.ReceiverID,
-			)
-			if err != nil {
+			group := new(entity.Group)
+			err := groupTx.TakePersonalGroupBySenderAndReceiverId(ctx, bc.User.ID, *bc.Request.ReceiverID, group)
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
 			}
 
-			msg.GroupID = &group.ID
+			if err != nil {
+
+				newGroup := &entity.Group{
+					Bio:       "~",
+					Name:      fmt.Sprintf("%s-%d", entity.PERSONAL, time.Now().Unix()),
+					Image:     storage.DEFAULT_GROUP_PROFILE_PICTURE_URL,
+					GroupType: entity.PERSONAL,
+				}
+
+				err = groupTx.Create(ctx, newGroup)
+				if err != nil {
+					return err
+				}
+
+				group = newGroup
+
+				newMembers := []*entity.Member{
+					{
+						GroupID: newGroup.ID,
+						UserID:  bc.User.ID,
+						Role:    entity.MEMBER,
+					},
+					{
+						GroupID: newGroup.ID,
+						UserID:  *bc.Request.ReceiverID,
+						Role:    entity.MEMBER,
+					},
+				}
+
+				err := memberTx.Creates(ctx, newMembers)
+				if err != nil {
+					return err
+				}
+
+			}
+
+			bc.Request.GroupID = &group.ID
+
 		}
 
 		member := new(entity.Member)
 		if err := memberTx.TakeByUserIdAndGroupId(
 			ctx,
-			msg.ClientID,
-			*msg.GroupID,
+			bc.User.ID,
+			*bc.Request.GroupID,
 			member,
 		); err != nil {
+			fmt.Println("errors TakeByUserIdAndGroupId")
 			return err
 		}
 
 		newMessage := &entity.Message{
 			MemberID: member.ID,
-			Message:  msg.Message,
+			Message:  bc.Request.Message,
 		}
 
 		if err := messageTx.Create(ctx, newMessage); err != nil {
+			fmt.Println("errors create message")
 			return err
 		}
 
-		msg.MessageID = newMessage.ID
+		newMessage.Member = &entity.Member{
+			User: bc.User,
+		}
+
+		bc.Message = newMessage
+
+		if !hub.IsExistGroup(*bc.Request.GroupID) {
+			memberIds, err := memberTx.GetUserIdsWithGroupId(ctx, *bc.Request.GroupID)
+			if err != nil {
+				return err
+			}
+
+			hub.CreateGroup(*bc.Request.GroupID, memberIds)
+		}
 
 		return nil
 	})
 
-	if err != nil {
-		return err
-	}
-
-	if !hub.IsExistGroup(*msg.GroupID) {
-
-		memberIds, err := ms.memberRepository.GetUserIdsWithGroupId(ctx, *msg.GroupID)
-		if err != nil {
-			return err
-		}
-
-		hub.CreateGroup(*msg.GroupID, memberIds)
-	}
-
-	return nil
+	return err
 }
 
 func (ms *MessageService) HandleGetMessages(ctx context.Context, groupId int, claims *util.Claims) ([]*entity.Message, error) {

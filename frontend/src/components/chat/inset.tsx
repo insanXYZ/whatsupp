@@ -21,7 +21,7 @@ export const AppSidebarInset = ({ header, content }: AppSidebarInsetProps) => {
         />
         {header}
       </header>
-      <div className="flex flex-1 flex-col gap-4 p-4">{content}</div>
+      <div className="relative flex flex-1 flex-col gap-4 p-4 ">{content}</div>
     </SidebarInset>
   );
 };
