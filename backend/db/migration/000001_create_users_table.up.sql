@@ -18,10 +18,18 @@ CREATE TABLE IF NOT EXISTS users (
   PRIMARY KEY(id)
 );
 
-CREATE TRIGGER trigger_set_updated_at_user
-BEFORE UPDATE ON users
-FOR EACH ROW
-EXECUTE FUNCTION set_updated_at();
+DO
+$$BEGIN
+    CREATE TRIGGER trigger_set_updated_at_user
+    BEFORE UPDATE ON users
+    FOR EACH ROW
+    EXECUTE FUNCTION set_updated_at();
+EXCEPTION
+   WHEN duplicate_object THEN
+      NULL;
+END;$$;
+
+
 
 
 

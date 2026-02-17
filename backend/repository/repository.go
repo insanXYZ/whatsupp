@@ -23,8 +23,12 @@ func (r *repository[T]) Update(ctx context.Context, model T) error {
 	return r.db.WithContext(ctx).Updates(model).Error
 }
 
-func (r *repository[T]) TakeById(ctx context.Context, model T, id any) error {
-	return r.db.WithContext(ctx).Take(model, "id = ?", id).Error
+func (r *repository[T]) TakeById(ctx context.Context, id any) (T, error) {
+	var dst T
+
+	err := r.db.WithContext(ctx).Take(dst, "id = ?", id).Error
+
+	return dst, err
 }
 
 func (r *repository[T]) Transaction(ctx context.Context, f func(tx *gorm.DB) error, opts ...*sql.TxOptions) error {

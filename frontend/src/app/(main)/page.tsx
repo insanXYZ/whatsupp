@@ -93,14 +93,15 @@ export default function Page() {
         console.log("error ", v);
       },
       onMessage: (v) => {
-        const data = JSON.parse(v.data) as GetMessageResponse;
-        const newMessages = data.messages;
-        const chatKey = `group-${data.group_id}`;
-
-        setMessagesByChatKey((prev) => ({
-          ...prev,
-          [chatKey]: [...(prev[chatKey] ?? []), ...newMessages],
-        }));
+        console.log(v.data);
+        // const data = JSON.parse(v.data) as GetMessageResponse;
+        // const newMessages = data.messages;
+        // const chatKey = `group-${data.group_id}`;
+        //
+        // setMessagesByChatKey((prev) => ({
+        //   ...prev,
+        //   [chatKey]: [...(prev[chatKey] ?? []), ...newMessages],
+        // }));
       },
       onOpen: () => {
         setConnect(true);

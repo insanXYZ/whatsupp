@@ -8,10 +8,10 @@ import (
 )
 
 type RouteConfig struct {
-	userController    *controller.UserController
-	messageController *controller.MessageController
-	groupController   *controller.GroupController
-	app               *echo.Echo
+	userController         *controller.UserController
+	messageController      *controller.MessageController
+	conversationController *controller.ConversationController
+	app                    *echo.Echo
 }
 
 func SetRoute(cfg *RouteConfig) {
@@ -32,11 +32,11 @@ func SetRoute(cfg *RouteConfig) {
 	user.GET("", cfg.userController.Me)
 	user.GET("/logout", cfg.userController.Logout)
 
-	group := hasJwtRoute.Group("/groups")
-	group.GET("/recent", cfg.groupController.LoadRecentGroups)
-	group.GET("", cfg.groupController.Lists)
+	group := hasJwtRoute.Group("/conversations")
+	group.GET("/recent", cfg.conversationController.LoadRecentConversations)
+	group.GET("", cfg.conversationController.Lists)
 
 	chat := hasJwtRoute.Group("/messages")
 	chat.POST("/attachments", cfg.messageController.UploadFileAttachments)
-	chat.GET("/:groupId", cfg.messageController.GetMessages)
+	chat.GET("/:conversationId", cfg.messageController.GetMessages)
 }

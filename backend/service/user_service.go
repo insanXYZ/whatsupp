@@ -108,7 +108,5 @@ func (u *UserService) HandleUpdateUser(ctx context.Context, req *dto.UpdateUserR
 }
 
 func (u *UserService) HandleMe(ctx context.Context, claims *util.Claims) (*entity.User, error) {
-	user := new(entity.User)
-	err := u.userRepository.TakeById(ctx, user, claims.Sub)
-	return user, err
+	return u.userRepository.TakeById(ctx, claims.Sub)
 }

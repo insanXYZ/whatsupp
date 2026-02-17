@@ -11,10 +11,11 @@ func MessageEntityToDto(message *entity.Message) *dto.Message {
 	}
 
 	return &dto.Message{
-		ID:        message.ID,
-		Message:   message.Message,
-		Member:    MemberEntityToDto(message.Member),
-		CreatedAt: message.CreatedAt,
+		ID:           message.ID,
+		Message:      message.Message,
+		CreatedAt:    message.CreatedAt,
+		Conversation: ConversationEntityToDto(message.Conversation),
+		User:         UserEntityToDto(message.User),
 	}
 }
 
@@ -27,8 +28,8 @@ func MessageEntitytoItemGetMessagesResponseDto(message *entity.Message, userId i
 	}
 
 	return &dto.ItemGetMessagesResponse{
-		IsMe:    messageDto.Member.User.ID == userId,
-		Message: *messageDto,
+		IsMe:    messageDto.User.ID == userId,
+		Message: messageDto,
 	}
 
 }

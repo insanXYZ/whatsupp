@@ -27,19 +27,20 @@ func (mr *MemberRepository) WithTx(tx *gorm.DB) *MemberRepository {
 	}
 }
 
-func (mr *MemberRepository) TakeByUserIdAndGroupId(ctx context.Context, userId, groupId int, dst *entity.Member) error {
-	err := mr.db.WithContext(ctx).Take(dst, "user_id = ? AND group_id = ?", userId, groupId).Error
-	return err
+func (mr *MemberRepository) TakeByUserIdAndConversationId(ctx context.Context, userId, conversationId int) (*entity.Member, error) {
+	member := new(entity.Member)
+	err := mr.db.WithContext(ctx).Take(member, "user_id = ? AND conversation_id = ?", userId, conversationId).Error
+	return member, err
 }
 
 func (mr *MemberRepository) FindByUserId(ctx context.Context, userId int, members []*entity.Member) error {
 	return mr.db.WithContext(ctx).Where("user_id = ?", userId).Find(members).Error
 }
 
-func (mr *MemberRepository) GetUserIdsWithGroupId(ctx context.Context, groupId int) ([]int, error) {
+func (mr *MemberRepository) GetUserIdsWithConversationId(ctx context.Context, conversationId int) ([]int, error) {
 	var members []*entity.Member
 
-	err := mr.db.WithContext(ctx).Select("user_id").Where("group_id = ?", groupId).Find(&members).Error
+	err := mr.db.WithContext(ctx).Select("user_id").Where("group_id = ?", conversationId).Find(&members).Error
 	if err != nil {
 		return nil, err
 	}

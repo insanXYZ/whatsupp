@@ -6,14 +6,14 @@ import (
 )
 
 const (
-	FILE_ATTACHMENT_BUCKET = "file-attachment"
-	USER_PROFILE_BUCKET    = "user-profile"
-	GROUP_PROFILE_BUCKET   = "group-profile"
+	FILE_ATTACHMENT_BUCKET      = "file-attachment"
+	USER_PROFILE_BUCKET         = "user-profile"
+	CONVERSATION_PROFILE_BUCKET = "conversation-profile"
 )
 
 var (
-	DEFAULT_PROFILE_PICTURE_URL       string
-	DEFAULT_GROUP_PROFILE_PICTURE_URL string
+	DEFAULT_PROFILE_PICTURE_URL          string
+	DEFAULT_CONVERSATION_PROFILE_PICTURE string
 )
 
 func InitStorage() {
@@ -23,8 +23,8 @@ func InitStorage() {
 		USER_PROFILE_BUCKET,
 	)
 
-	DEFAULT_GROUP_PROFILE_PICTURE_URL = fmt.Sprintf("%s/object/public/%s/default.png",
+	DEFAULT_CONVERSATION_PROFILE_PICTURE = fmt.Sprintf("%s/object/public/%s/default.png",
 		os.Getenv("SUPABASE_STORAGE_RAW_URL"),
-		GROUP_PROFILE_BUCKET,
+		CONVERSATION_PROFILE_BUCKET,
 	)
 }

@@ -49,7 +49,7 @@ func NewSupabaseStorageClient() (*storage_go.Client, error) {
 		return nil, err
 	}
 
-	if err := createBucketIfNotExists(client, storage.GROUP_PROFILE_BUCKET, storage_go.BucketOptions{
+	if err := createBucketIfNotExists(client, storage.CONVERSATION_PROFILE_BUCKET, storage_go.BucketOptions{
 		Public: true,
 	}); err != nil {
 		return nil, err

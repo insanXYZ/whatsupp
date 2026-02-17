@@ -22,7 +22,7 @@ import (
 
 type MessageService struct {
 	validator                   *validator.Validate
-	groupRepository             *repository.GroupRepository
+	conversationRepository      *repository.ConversationRepository
 	memberRepository            *repository.MemberRepository
 	messageRepository           *repository.MessageRepository
 	messageAttachmentRepository *repository.MessageAttachmentRepository
@@ -33,7 +33,7 @@ type MessageService struct {
 
 func NewMessageService(
 	validator *validator.Validate,
-	groupRepository *repository.GroupRepository,
+	conversationRepository *repository.ConversationRepository,
 	memberRepository *repository.MemberRepository,
 	messageRepository *repository.MessageRepository,
 	messageAttachmentRepository *repository.MessageAttachmentRepository,
@@ -46,7 +46,7 @@ func NewMessageService(
 		storage:                     storage,
 		hub:                         hub,
 		validator:                   validator,
-		groupRepository:             groupRepository,
+		conversationRepository:      conversationRepository,
 		memberRepository:            memberRepository,
 		messageRepository:           messageRepository,
 		messageAttachmentRepository: messageAttachmentRepository,
@@ -56,8 +56,7 @@ func NewMessageService(
 func (cs *MessageService) HandleUpgradeWs(ctx context.Context, claims *util.Claims, w http.ResponseWriter, r *http.Request) error {
 	userId := claims.Sub
 
-	user := new(entity.User)
-	err := cs.userRepository.TakeById(ctx, user, userId)
+	user, err := cs.userRepository.TakeById(ctx, userId)
 	if err != nil {
 		return err
 	}
@@ -88,7 +87,7 @@ func (cs *MessageService) HandleUploadFileAttachments(ctx context.Context, messa
 	return cs.messageAttachmentRepository.Transaction(ctx, func(tx *gorm.DB) error {
 
 		messageRepoTx := cs.messageRepository.WithTx(tx)
-		err := messageRepoTx.TakeById(ctx, &entity.Message{}, messageID)
+		_, err := messageRepoTx.TakeById(ctx, messageID)
 		if err != nil {
 			return err
 		}
@@ -145,105 +144,143 @@ func (ms *MessageService) handleIncomingMessage(
 
 	err := ms.messageRepository.Transaction(ctx, func(tx *gorm.DB) error {
 
-		groupTx := ms.groupRepository.WithTx(tx)
+		conversationTx := ms.conversationRepository.WithTx(tx)
 		memberTx := ms.memberRepository.WithTx(tx)
 		messageTx := ms.messageRepository.WithTx(tx)
 
-		if bc.Request.GroupID == nil {
+		var conversation *entity.Conversation
+		var isNewConversation bool
+		var err error
 
-			group := new(entity.Group)
-			err := groupTx.TakePersonalGroupBySenderAndReceiverId(ctx, bc.User.ID, *bc.Request.ReceiverID, group)
-			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		if bc.Request.ConversationID == nil {
+
+			switch bc.Request.Target.Type {
+			case dto.TYPE_TARGET_GROUP:
+				conversation, err = conversationTx.TakeGroupConversationByUserAndConversationId(ctx, bc.Sender.ID, bc.Request.Target.ID)
+			case dto.TYPE_TARGET_USER:
+				senderId := bc.Sender.ID
+				receiverId := bc.Request.Target.ID
+				conversation, err = conversationTx.TakePersonalConversationBySenderAndReceiverId(ctx, senderId, receiverId)
+			default:
+				err = errors.New("invalid target type")
+			}
+
+			isNotFound := errors.Is(err, gorm.ErrRecordNotFound)
+
+			if err != nil && ((bc.Request.Target.Type == dto.TYPE_TARGET_GROUP) || (!isNotFound && bc.Request.Target.Type == dto.TYPE_TARGET_USER)) {
 				return err
 			}
 
-			if err != nil {
-
-				newGroup := &entity.Group{
-					Bio:       "~",
-					Name:      fmt.Sprintf("%s-%d", entity.PERSONAL, time.Now().Unix()),
-					Image:     storage.DEFAULT_GROUP_PROFILE_PICTURE_URL,
-					GroupType: entity.PERSONAL,
+			// create new conversation if target type is user
+			if isNotFound {
+				newConversation := &entity.Conversation{
+					Bio:              "~",
+					Name:             fmt.Sprintf("%s-%d", entity.CONV_TYPE_PRIVATE, time.Now().Unix()),
+					ConversationType: entity.CONV_TYPE_PRIVATE,
+					Image:            storage.DEFAULT_CONVERSATION_PROFILE_PICTURE,
 				}
 
-				err = groupTx.Create(ctx, newGroup)
+				err = conversationTx.Create(ctx, newConversation)
 				if err != nil {
 					return err
 				}
 
-				group = newGroup
+				conversation = newConversation
+				isNewConversation = true
 
 				newMembers := []*entity.Member{
 					{
-						GroupID: newGroup.ID,
-						UserID:  bc.User.ID,
-						Role:    entity.MEMBER,
+						ConversationID: newConversation.ID,
+						UserID:         bc.Sender.ID,
+						Role:           entity.MEMBER_TYPE_MEMBER,
 					},
 					{
-						GroupID: newGroup.ID,
-						UserID:  *bc.Request.ReceiverID,
-						Role:    entity.MEMBER,
+						ConversationID: newConversation.ID,
+						UserID:         bc.Request.Target.ID,
+						Role:           entity.MEMBER_TYPE_MEMBER,
 					},
 				}
 
-				err := memberTx.Creates(ctx, newMembers)
+				err = memberTx.Creates(ctx, newMembers)
 				if err != nil {
 					return err
 				}
-
 			}
-
-			bc.Request.GroupID = &group.ID
-
-		}
-
-		member := new(entity.Member)
-		if err := memberTx.TakeByUserIdAndGroupId(
-			ctx,
-			bc.User.ID,
-			*bc.Request.GroupID,
-			member,
-		); err != nil {
-			fmt.Println("errors TakeByUserIdAndGroupId")
-			return err
 		}
 
 		newMessage := &entity.Message{
-			MemberID: member.ID,
-			Message:  bc.Request.Message,
+			UserID:         bc.Sender.ID,
+			ConversationID: conversation.ID,
+			Message:        bc.Request.Message,
 		}
 
-		if err := messageTx.Create(ctx, newMessage); err != nil {
-			fmt.Println("errors create message")
+		err = messageTx.Create(ctx, newMessage)
+		if err != nil {
 			return err
 		}
 
-		newMessage.Member = &entity.Member{
-			User: bc.User,
-		}
-
 		bc.Message = newMessage
+		bc.Message.User = bc.Sender
 
-		if !hub.IsExistGroup(*bc.Request.GroupID) {
-			memberIds, err := memberTx.GetUserIdsWithGroupId(ctx, *bc.Request.GroupID)
+		bc.Request.ConversationID = &conversation.ID
+
+		if !hub.IsExistConversation(conversation.ID) {
+			memberIds, err := memberTx.GetUserIdsWithConversationId(ctx, conversation.ID)
 			if err != nil {
 				return err
 			}
 
-			hub.CreateGroup(*bc.Request.GroupID, memberIds)
+			hub.CreateConversation(conversation.ID, memberIds)
 		}
 
+		if isNewConversation {
+			// send to sender
+			err := hub.SendNewConversation(bc.Request.Target.ID, &dto.NewConversationResponse{
+				ID:               bc.Sender.ID,
+				Image:            bc.Sender.Image,
+				Name:             bc.Sender.Name,
+				Bio:              bc.Sender.Bio,
+				ConversationType: entity.CONV_TYPE_PRIVATE,
+				ConversationID:   &conversation.ID,
+			})
+			if err != nil {
+				return err
+			}
+
+			receiver := hub.GetClient(bc.Request.Target.ID)
+
+			if receiver == nil {
+				receiver, err = ms.userRepository.TakeById(ctx, bc.Request.Target.ID)
+			}
+			if err != nil {
+				return err
+			}
+
+			err = hub.SendNewConversation(bc.Sender.ID, &dto.NewConversationResponse{
+				ID:               receiver.ID,
+				Image:            receiver.Image,
+				Name:             receiver.Name,
+				Bio:              receiver.Bio,
+				ConversationType: entity.CONV_TYPE_PRIVATE,
+				ConversationID:   &conversation.ID,
+			})
+
+			if err != nil {
+				return err
+			}
+
+		}
 		return nil
 	})
 
 	return err
 }
 
-func (ms *MessageService) HandleGetMessages(ctx context.Context, groupId int, claims *util.Claims) ([]*entity.Message, error) {
-	_, err := ms.groupRepository.TakeGroupWithGroupIdAndUserId(ctx, groupId, claims.Sub)
+func (ms *MessageService) HandleGetMessages(ctx context.Context, conversationId int, claims *util.Claims) ([]*entity.Message, error) {
+	_, err := ms.memberRepository.TakeByUserIdAndConversationId(ctx, claims.Sub, conversationId)
 	if err != nil {
 		return nil, err
 	}
 
-	return ms.messageRepository.GetMessages(ctx, groupId)
+	return ms.messageRepository.GetMessages(ctx, conversationId)
 }

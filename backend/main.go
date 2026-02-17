@@ -39,28 +39,28 @@ func main() {
 
 	// init repository
 	memberRepository := repository.NewMemberRepository(gorm)
-	groupRepository := repository.NewGroupRepository(gorm)
+	conversationRepository := repository.NewConversationRepository(gorm)
 	messageAttachmentRepository := repository.NewMessageAttachmentRepository(gorm)
 	messageRepository := repository.NewMessageRepository(gorm)
 	userRepository := repository.NewUserRepository(gorm)
 
 	// init service
 
-	messageService := service.NewMessageService(validator, groupRepository, memberRepository, messageRepository, messageAttachmentRepository, userRepository, hub, clientStorage)
+	messageService := service.NewMessageService(validator, conversationRepository, memberRepository, messageRepository, messageAttachmentRepository, userRepository, hub, clientStorage)
 	userService := service.NewUserService(validator, userRepository)
-	groupService := service.NewGroupService(validator, memberRepository, groupRepository)
+	conversationService := service.NewConversationService(validator, memberRepository, conversationRepository)
 
 	// init controller
 
 	messageController := controller.NewChatController(messageService)
 	userController := controller.NewUserController(userService)
-	groupController := controller.NewGroupController(groupService)
+	conversationController := controller.NewConversationController(conversationService)
 
 	SetRoute(&RouteConfig{
-		userController:    userController,
-		messageController: messageController,
-		groupController:   groupController,
-		app:               app,
+		userController:         userController,
+		messageController:      messageController,
+		conversationController: conversationController,
+		app:                    app,
 	})
 
 	err = app.Start(fmt.Sprintf(":%s", os.Getenv("APP_PORT")))

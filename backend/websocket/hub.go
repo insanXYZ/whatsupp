@@ -5,14 +5,17 @@
 package websocket
 
 import (
-	"log"
+	"encoding/json"
 	"whatsupp-backend/dto"
+	"whatsupp-backend/entity"
+
+	"github.com/gorilla/websocket"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
-	groups map[int]map[int]bool
+	conversations map[int]map[int]bool
 
 	// Registered clients.
 	clients map[int]*Client
@@ -29,16 +32,40 @@ type Hub struct {
 
 func NewHub() *Hub {
 	return &Hub{
-		groups:     make(map[int]map[int]bool),
-		clients:    make(map[int]*Client),
-		broadcast:  make(chan *dto.BroadcastMessageWs),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
+		conversations: make(map[int]map[int]bool),
+		clients:       make(map[int]*Client),
+		broadcast:     make(chan *dto.BroadcastMessageWs),
+		register:      make(chan *Client),
+		unregister:    make(chan *Client),
 	}
 }
 
-func (h *Hub) CreateGroup(groupId int, members []int) {
-	_, exist := h.groups[groupId]
+func (h *Hub) GetClient(clientId int) *entity.User {
+
+	client, ok := h.clients[clientId]
+	if !ok {
+		return nil
+	}
+
+	return client.User
+}
+
+func (h *Hub) SendNewConversation(clientId int, data *dto.NewConversationResponse) error {
+	client, ok := h.clients[clientId]
+	if !ok {
+		return nil
+	}
+
+	dataByte, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	return client.Conn.WriteMessage(websocket.TextMessage, dataByte)
+}
+
+func (h *Hub) CreateConversation(conversationID int, members []int) {
+	_, exist := h.conversations[conversationID]
 
 	if exist {
 		return
@@ -49,15 +76,15 @@ func (h *Hub) CreateGroup(groupId int, members []int) {
 		membersMap[v] = true
 	}
 
-	h.groups[groupId] = membersMap
+	h.conversations[conversationID] = membersMap
 }
 
 func (h *Hub) Register(client *Client) {
 	h.register <- client
 }
 
-func (h *Hub) IsExistGroup(groupId int) bool {
-	_, exist := h.groups[groupId]
+func (h *Hub) IsExistConversation(conversationID int) bool {
+	_, exist := h.conversations[conversationID]
 	return exist
 }
 
@@ -73,16 +100,14 @@ func (h *Hub) Run() {
 			}
 		case message := <-h.broadcast:
 
-			clients, ok := h.groups[*message.Request.GroupID]
+			clients, ok := h.conversations[*message.Request.ConversationID]
 			if !ok {
-				log.Println("error missing group id")
 				continue
 			}
 
-			isMember := clients[message.User.ID]
+			isMember := clients[message.Sender.ID]
 
 			if !isMember {
-				log.Println("error is not member")
 				continue
 			}
 
@@ -95,8 +120,6 @@ func (h *Hub) Run() {
 				select {
 				case client.Send <- message:
 				default:
-					log.Println("dropping message, client too slow:", clientID)
-
 					close(client.Send)
 					delete(h.clients, clientID)
 				}

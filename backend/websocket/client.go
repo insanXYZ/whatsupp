@@ -14,7 +14,6 @@ import (
 	"whatsupp-backend/dto"
 	"whatsupp-backend/dto/converter"
 	"whatsupp-backend/entity"
-	"whatsupp-backend/util"
 
 	"github.com/gorilla/websocket"
 )
@@ -46,7 +45,6 @@ var Upgrader = websocket.Upgrader{
 	},
 }
 
-// returning messageId, groupId
 type HandlerIncomingMessage func(ctx context.Context, msg *dto.BroadcastMessageWs, hub *Hub) error
 
 // Client is a middleman between the websocket connection and the Hub.
@@ -91,24 +89,27 @@ func (c *Client) ReadPump() {
 		case websocket.TextMessage:
 			ctx := context.Background()
 
-			req := new(dto.MessageWsRequest)
-			err = json.Unmarshal(message, req)
+			event := new(dto.EventMessageWs)
+			err = json.Unmarshal(message, event)
 			if err != nil {
 				fmt.Println("error unmarshaling message:", err.Error())
 				continue
 			}
 
-			request, _ := util.MarshalIndent(req)
-			fmt.Println(request)
+			if event.Event != string(dto.EVENT_SEND_MESSAGE) {
+				//handle invalid event
+				continue
+			}
 
-			if req.GroupID == nil && req.ReceiverID == nil {
-				// handle missing group id or receiver id
+			req, ok := event.Data.(dto.SendMessageRequestWs)
+			if !ok {
+				// handle invalid schema
 				continue
 			}
 
 			broadcast := &dto.BroadcastMessageWs{
-				Request: req,
-				User:    c.User,
+				Request: &req,
+				Sender:  c.User,
 			}
 
 			err := c.HandlerIncomingMessage(ctx, broadcast, c.Hub)
@@ -152,10 +153,12 @@ func (c *Client) WritePump() {
 				return
 			}
 
-			response := &dto.GetMessagesResponse{
-				GroupId: *message.Request.GroupID,
-				Messages: []*dto.ItemGetMessagesResponse{
-					converter.MessageEntitytoItemGetMessagesResponseDto(message.Message, c.User.ID),
+			response := &dto.EventMessageWs{
+				Event: string(dto.EVENT_NEW_MESSAGE),
+				Data: &dto.NewMessageResponse{
+					IsMe:           message.Message.UserID == c.User.ID,
+					ConversationID: *message.Request.ConversationID,
+					Message:        converter.MessageEntityToDto(message.Message),
 				},
 			}
 
@@ -175,10 +178,12 @@ func (c *Client) WritePump() {
 					continue
 				}
 
-				response := &dto.GetMessagesResponse{
-					GroupId: *message.Request.GroupID,
-					Messages: []*dto.ItemGetMessagesResponse{
-						converter.MessageEntitytoItemGetMessagesResponseDto(message.Message, message.User.ID),
+				response := &dto.EventMessageWs{
+					Event: string(dto.EVENT_NEW_MESSAGE),
+					Data: &dto.NewMessageResponse{
+						IsMe:           message.Message.UserID == c.User.ID,
+						ConversationID: *message.Request.ConversationID,
+						Message:        converter.MessageEntityToDto(message.Message),
 					},
 				}
 

@@ -65,20 +65,20 @@ func (mc *MessageController) GetMessages(c *echo.Context) error {
 		return util.ResponseErr(c, message.ERR_BIND_REQ, err)
 	}
 
-	messages, err := mc.messageService.HandleGetMessages(ctx, req.GroupID, claims)
+	messages, err := mc.messageService.HandleGetMessages(ctx, req.ConversationId, claims)
 	if err != nil {
 		return util.ResponseErr(c, message.ERR_GET_MESSAGES, err)
 	}
 
-	itemMessages := make([]*dto.ItemGetMessagesResponse, len(messages))
+	messageDtos := make([]*dto.ItemGetMessagesResponse, len(messages))
 
 	for i, message := range messages {
-		itemMessages[i] = converter.MessageEntitytoItemGetMessagesResponseDto(message, claims.Sub)
+		messageDtos[i] = converter.MessageEntitytoItemGetMessagesResponseDto(message, claims.Sub)
 	}
 
 	response := &dto.GetMessagesResponse{
-		GroupId:  req.GroupID,
-		Messages: itemMessages,
+		ConversationId: req.ConversationId,
+		Message:        messageDtos,
 	}
 
 	return util.ResponseOk(c, message.SUCCESS_GET_MESSAGES, response)
