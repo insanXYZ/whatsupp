@@ -38,16 +38,16 @@ func (cr *ConversationRepository) SearchConversationWithNameAndUserId(
 
 	query := `
 				SELECT 
-				'user' as conversation_type,
+				'USER' as conversation_type,
 				u.id,
 				u.name,
 				u.image,
 				u.bio,
 				( SELECT 
-					c.id FROM conversation c
-					INNER JOIN members m1 ON m1.group_id = c.id
-					INNER JOIN members m2 ON m2.group_id = c.id
-					WHERE c.type = 'PERSONAL'
+					c.id FROM conversations c
+					INNER JOIN members m1 ON m1.conversation_id = c.id
+					INNER JOIN members m2 ON m2.conversation_id = c.id
+					WHERE c.type = 'PRIVATE'
 					AND m1.user_id = ?
 					AND m2.user_id = u.id
 					LIMIT 1
@@ -59,15 +59,15 @@ func (cr *ConversationRepository) SearchConversationWithNameAndUserId(
         UNION ALL
 
         SELECT
-            'group' AS conversation_type,
-            g.id,
-            g.name,
-            g.image,
-            g.bio,
-            g.id AS conversation_id
-        FROM groups g
-        WHERE g.type = 'GROUP'
-        AND g.name ILIKE ?
+            'GROUP' AS conversation_type,
+            c.id,
+            c.name,
+            c.image,
+            c.bio,
+            c.id AS conversation_id
+        FROM conversations c
+        WHERE c.type = 'GROUP'
+        AND c.name ILIKE ?
     `
 
 	var results []dto.SearchConversationResponse
@@ -84,12 +84,18 @@ func (cr *ConversationRepository) SearchConversationWithNameAndUserId(
 	return results, nil
 }
 
-func (cr *ConversationRepository) TakePersonalConversationBySenderAndReceiverId(ctx context.Context, senderId, receiverId int) (*entity.Conversation, error) {
+func (cr *ConversationRepository) TakePrivateConversationBySenderAndReceiverId(ctx context.Context, senderId, receiverId int) (*entity.Conversation, error) {
 
 	conversation := new(entity.Conversation)
 
 	rawQuery := `
-                SELECT *
+                SELECT 
+								c.id as id,
+								c.name as name,
+								c.bio as bio,
+								c.type as type,
+								c.image as image,
+								c.created_at as created_at
                 FROM conversations c
                 INNER JOIN members m1 ON m1.conversation_id = c.id
                 INNER JOIN members m2 ON m2.conversation_id = c.id
@@ -122,7 +128,7 @@ func (cr *ConversationRepository) TakeConversationByUserAndConversationId(ctx co
 func (cr *ConversationRepository) TakeGroupConversationByUserAndConversationId(ctx context.Context, userId, conversationId int) (*entity.Conversation, error) {
 	conversation := new(entity.Conversation)
 
-	cr.db.WithContext(ctx).Joins("JOIN members ON members.group_id = groups.id AND members.user_id = ?", userId).Take(conversation, "conversations.id = ?", conversationId)
+	cr.db.WithContext(ctx).Joins("JOIN members ON members.conversation_id = conversations.id AND members.user_id = ?", userId).Take(conversation, "conversations.id = ?", conversationId)
 
 	return conversation, nil
 }
@@ -130,7 +136,7 @@ func (cr *ConversationRepository) TakeGroupConversationByUserAndConversationId(c
 func (cr *ConversationRepository) FindConversationsByUserId(
 	ctx context.Context,
 	userId int,
-) ([]dto.LoadRecentGroup, error) {
+) ([]dto.LoadRecentConversation, error) {
 
 	query := `
         SELECT
@@ -143,12 +149,12 @@ func (cr *ConversationRepository) FindConversationsByUserId(
 
         FROM conversations c
         JOIN members me 
-            ON me.group_id = c.id
+            ON me.conversation_id = c.id
 
         LEFT JOIN members other
-            ON other.group_id = c.id
+            ON other.conversation_id = c.id
             AND other.user_id != me.user_id
-            AND c.type = 'PERSONAL'
+            AND c.type = 'PRIVATE'
 
         LEFT JOIN users u
             ON u.id = other.user_id
@@ -156,7 +162,7 @@ func (cr *ConversationRepository) FindConversationsByUserId(
         WHERE me.user_id = ?
     `
 
-	var result []dto.LoadRecentGroup
+	var result []dto.LoadRecentConversation
 
 	err := cr.db.
 		WithContext(ctx).

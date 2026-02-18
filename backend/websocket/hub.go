@@ -56,7 +56,12 @@ func (h *Hub) SendNewConversation(clientId int, data *dto.NewConversationRespons
 		return nil
 	}
 
-	dataByte, err := json.Marshal(data)
+	event := &dto.EventMessageWs{
+		Event: string(dto.EVENT_NEW_CONVERSATION),
+		Data:  data,
+	}
+
+	dataByte, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}

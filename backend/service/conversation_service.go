@@ -27,6 +27,6 @@ func (cs *ConversationService) HandleFindConversations(ctx context.Context, clai
 	return cs.conversationRepository.SearchConversationWithNameAndUserId(ctx, claims.Sub, req.Name)
 }
 
-func (cs *ConversationService) HandleLoadRecentConversations(ctx context.Context, claims *util.Claims) ([]dto.LoadRecentGroup, error) {
+func (cs *ConversationService) HandleLoadRecentConversations(ctx context.Context, claims *util.Claims) ([]dto.LoadRecentConversation, error) {
 	return cs.conversationRepository.FindConversationsByUserId(ctx, claims.Sub)
 }

@@ -24,14 +24,12 @@ interface MemberEntity {
 
 interface MessageEntity {
   id: number;
-  member_id: number;
   message: string;
   created_at: string;
-  member: MemberEntity;
 }
 
 interface GetMessageResponse {
-  group_id: number;
+  conversation_id: number;
   messages: ItemGetMessageResponse[];
 }
 

@@ -4,6 +4,8 @@ import { Separator } from "../ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Paperclip, Send } from "lucide-react";
 import { ButtonLoading } from "../ui/button-loading";
+import { SendMessageRequest } from "@/dto/ws-dto";
+import { RowConversationChat } from "@/dto/conversation-dto.ts";
 
 type AppSidebarInsetProps = {
   header?: ReactNode;
@@ -26,15 +28,15 @@ export const AppSidebarInset = ({ header, content }: AppSidebarInsetProps) => {
   );
 };
 
-type InsetHeaderGroupProps = {
+type InsetHeaderConversationProps = {
   image: string;
   name: string;
 };
 
-export const InsetHeaderGroupProfile = ({
+export const InsetHeaderConversationProfile = ({
   image,
   name,
-}: InsetHeaderGroupProps) => {
+}: InsetHeaderConversationProps) => {
   return (
     <div className="flex gap-5 items-center">
       <Avatar className="h-7 w-7 rounded-lg">
@@ -47,15 +49,13 @@ export const InsetHeaderGroupProfile = ({
 };
 
 type InsetChatProps = {
-  groupId?: number;
-  receiverId?: number;
+  conversationDetail: RowConversationChat;
   messages: ItemGetMessageResponse[];
   onSubmit: (v: SendMessageRequest) => any;
 };
 
 export const InsetChat = ({
-  groupId,
-  receiverId,
+  conversationDetail,
   messages,
   onSubmit,
 }: InsetChatProps) => {
@@ -63,11 +63,22 @@ export const InsetChat = ({
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit({
-      group_id: groupId,
-      receiver_id: receiverId,
+    const req: SendMessageRequest = {
       message: message,
-    });
+      conversation_id:
+        conversationDetail.conversation_id ??
+        conversationDetail.conversation_id,
+      tmp_conversation_id: conversationDetail.conversation_id
+        ? undefined
+        : `tmp-${conversationDetail.conversation_type}-${conversationDetail.id}`,
+      target: {
+        id: conversationDetail.id,
+        type: conversationDetail.conversation_type,
+      },
+    };
+
+    onSubmit(req);
+    setMessage("");
   };
 
   return (

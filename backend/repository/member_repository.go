@@ -40,7 +40,7 @@ func (mr *MemberRepository) FindByUserId(ctx context.Context, userId int, member
 func (mr *MemberRepository) GetUserIdsWithConversationId(ctx context.Context, conversationId int) ([]int, error) {
 	var members []*entity.Member
 
-	err := mr.db.WithContext(ctx).Select("user_id").Where("group_id = ?", conversationId).Find(&members).Error
+	err := mr.db.WithContext(ctx).Select("user_id").Where("conversation_id = ?", conversationId).Find(&members).Error
 	if err != nil {
 		return nil, err
 	}

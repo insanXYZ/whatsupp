@@ -37,14 +37,16 @@ type TargetSendMessage struct {
 }
 
 type SendMessageRequestWs struct {
-	Target         TargetSendMessage `json:"target"`
-	Message        string            `json:"message,omitempty"`
-	ConversationID *int              `json:"conversation_id,omitempty"`
+	Target            TargetSendMessage `json:"target,omitempty"`
+	Message           string            `json:"message,omitempty"`
+	TmpConversationID *string           `json:"tmp_conversation_id,omitempty"`
+	ConversationID    *int              `json:"conversation_id,omitempty"`
 }
 
 type NewMessageResponse struct {
-	IsMe           bool
-	ConversationID int
+	IsMe              bool    `json:"is_me,omitempty"`
+	ConversationID    int     `json:"conversation_id,omitempty"`
+	TmpConversationID *string `json:"tmp_conversation_id,omitempty"`
 	*Message
 }
 
@@ -55,11 +57,11 @@ type GetMessageRequest struct {
 }
 
 type ItemGetMessagesResponse struct {
-	IsMe    bool     `json:"is_me"`
-	Message *Message `json:"message"`
+	IsMe bool `json:"is_me"`
+	*Message
 }
 
 type GetMessagesResponse struct {
 	ConversationId int                        `json:"conversation_id,omitempty"`
-	Message        []*ItemGetMessagesResponse `json:"message,omitempty"`
+	Message        []*ItemGetMessagesResponse `json:"messages,omitempty"`
 }

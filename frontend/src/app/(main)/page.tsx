@@ -4,10 +4,16 @@ import { ChatBannerLoading } from "@/components/chat/banner-loading";
 import {
   AppSidebarInset,
   InsetChat,
-  InsetHeaderGroupProfile,
+  InsetHeaderConversationProfile,
 } from "@/components/chat/inset";
 import { AppSidebar } from "@/components/chat/sidebar";
-import { RowGroupChat } from "@/dto/group-dto";
+import { RowConversationChat } from "@/dto/conversation-dto.ts";
+import {
+  EVENT_SEND_MESSAGE,
+  EventWs,
+  SEND_MESSAGE,
+  SendMessageRequest,
+} from "@/dto/ws-dto";
 import { ConnectIdb } from "@/utils/indexdb";
 import { HttpMethod, Mutation } from "@/utils/tanstack";
 import { ToastError } from "@/utils/toast";
@@ -20,7 +26,7 @@ export default function Page() {
   const idbRef = useRef<IDBPDatabase | null>(null);
 
   const [connect, setConnect] = useState<boolean>(false);
-  const [activeChat, setActiveChat] = useState<RowGroupChat>();
+  const [activeChat, setActiveChat] = useState<RowConversationChat>();
   const [messagesByChatKey, setMessagesByChatKey] = useState<
     Record<string, ItemGetMessageResponse[]>
   >({});
@@ -31,45 +37,36 @@ export default function Page() {
     data: dataGetMessages,
   } = Mutation(["getMessages"]);
 
-  const activeChatKey = activeChat
-    ? activeChat.group_id
-      ? `group-${activeChat.group_id}`
-      : `user-${activeChat.id}`
-    : null;
-
   const handleSendMessage = (v: SendMessageRequest) => {
-    wsRef.current?.send(JSON.stringify(v));
+    const req: EventWs = {
+      event: EVENT_SEND_MESSAGE,
+      data: v,
+    };
+
+    console.log("request send message:", req);
+
+    wsRef.current?.send(JSON.stringify(req));
   };
 
-  const onClickGroupChat = (v: RowGroupChat) => {
+  const onClickGroupChat = (v: RowConversationChat) => {
     setActiveChat(v);
-
-    const chatKey = v.group_id ? `group-${v.group_id}` : `user-${v.id}`;
-
-    if (v.group_id && !messagesByChatKey[chatKey]) {
-      mutateGetMessages({
-        method: HttpMethod.GET,
-        url: "/messages/" + v.group_id,
-        body: null,
-      });
-    }
   };
 
   useEffect(() => {
-    if (isSuccessGetMessages && dataGetMessages?.data) {
-      const res = dataGetMessages.data as GetMessageResponse;
-      const groupId = res.group_id;
-
-      if (!groupId) return;
-
-      const chatKey = `group-${groupId}`;
-      const messages = res.messages as ItemGetMessageResponse[];
-
-      setMessagesByChatKey((prev) => ({
-        ...prev,
-        [chatKey]: messages,
-      }));
-    }
+    // if (isSuccessGetMessages && dataGetMessages?.data) {
+    //   const res = dataGetMessages.data as GetMessageResponse;
+    //   const conversationId = res.conversation_id;
+    //
+    //   if (!conversationId) return;
+    //
+    //   const chatKey = `group-${groupId}`;
+    //   const messages = res.messages as ItemGetMessageResponse[];
+    //
+    //   setMessagesByChatKey((prev) => ({
+    //     ...prev,
+    //     [chatKey]: messages,
+    //   }));
+    // }
   }, [isSuccessGetMessages]);
 
   useEffect(() => {
@@ -80,7 +77,7 @@ export default function Page() {
       .catch(() => {
         ToastError(
           "Error connected IndexedDB",
-          "Please refresh this page, or if thats not help, you can send issues to https://github.com/insanXYZ/postgirl/issues",
+          "Please refresh this page, or if thats not help, you can send issues to https://github.com/insanXYZ/whatsupp/issues",
         );
       });
 
@@ -91,9 +88,10 @@ export default function Page() {
       },
       onError: (v) => {
         console.log("error ", v);
+        setConnect(false);
       },
       onMessage: (v) => {
-        console.log(v.data);
+        console.log("onMessage: ", v.data);
         // const data = JSON.parse(v.data) as GetMessageResponse;
         // const newMessages = data.messages;
         // const chatKey = `group-${data.group_id}`;
@@ -121,7 +119,7 @@ export default function Page() {
       <AppSidebarInset
         header={
           activeChat && (
-            <InsetHeaderGroupProfile
+            <InsetHeaderConversationProfile
               image={activeChat.image}
               name={activeChat.name}
             />
@@ -130,12 +128,9 @@ export default function Page() {
         content={
           activeChat && (
             <InsetChat
-              messages={
-                activeChatKey ? (messagesByChatKey[activeChatKey] ?? []) : []
-              }
+              messages={[]}
               onSubmit={handleSendMessage}
-              groupId={activeChat.group_id}
-              receiverId={activeChat.id}
+              conversationDetail={activeChat}
             />
           )
         }

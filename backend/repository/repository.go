@@ -26,7 +26,7 @@ func (r *repository[T]) Update(ctx context.Context, model T) error {
 func (r *repository[T]) TakeById(ctx context.Context, id any) (T, error) {
 	var dst T
 
-	err := r.db.WithContext(ctx).Take(dst, "id = ?", id).Error
+	err := r.db.WithContext(ctx).Take(&dst, "id = ?", id).Error
 
 	return dst, err
 }

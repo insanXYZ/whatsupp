@@ -23,9 +23,9 @@ type SearchConversationResponse struct {
 	Image            string `json:"image,omitempty"`
 	Bio              string `json:"bio,omitempty"`
 	ConversationType string `json:"conversation_type,omitempty"`
-	ConversationID   *int   `json:"Conversation_id"`
+	ConversationID   *int   `json:"conversation_id"`
 }
 
-type LoadRecentGroup = SearchConversationResponse
+type LoadRecentConversation = SearchConversationResponse
 
 type NewConversationResponse = SearchConversationResponse

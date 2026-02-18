@@ -58,11 +58,14 @@ func (cs *MessageService) HandleUpgradeWs(ctx context.Context, claims *util.Clai
 
 	user, err := cs.userRepository.TakeById(ctx, userId)
 	if err != nil {
+		fmt.Println("error 1:", err.Error())
 		return err
 	}
 
 	ws, err := websocket.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
+
+		fmt.Println("error 2:", err.Error())
 		return err
 	}
 
@@ -160,7 +163,7 @@ func (ms *MessageService) handleIncomingMessage(
 			case dto.TYPE_TARGET_USER:
 				senderId := bc.Sender.ID
 				receiverId := bc.Request.Target.ID
-				conversation, err = conversationTx.TakePersonalConversationBySenderAndReceiverId(ctx, senderId, receiverId)
+				conversation, err = conversationTx.TakePrivateConversationBySenderAndReceiverId(ctx, senderId, receiverId)
 			default:
 				err = errors.New("invalid target type")
 			}

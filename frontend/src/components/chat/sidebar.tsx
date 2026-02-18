@@ -1,7 +1,14 @@
-import { MessageSquareQuote } from "lucide-react";
+import {
+  BadgeCheck,
+  ChevronsUpDown,
+  LoaderCircle,
+  LogOut,
+  MessageSquareQuote,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -9,17 +16,27 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "../ui/sidebar";
 import { NAV_TITLE_CHAT, Navigations } from "@/navigation/navigation";
 import { ReactNode, useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
 import { HttpMethod, Mutation, useQueryData } from "@/utils/tanstack";
-import {
-  RecentGroupsResponse,
-  RowGroupChat,
-  SearchGroupResponse,
-} from "@/dto/group-dto";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { AlertDialogWithMedia } from "../ui/alert-dialog-media";
+import {
+  RecentConversationsResponse,
+  SearchConversationResponse,
+} from "@/dto/conversation-dto.ts";
 
 type AppSidebarProps = {
   onClickGroupChat: (v: RowGroupChat) => void;
@@ -35,39 +52,40 @@ export const AppSidebar = ({ onClickGroupChat }: AppSidebarProps) => {
 
   const { data: dataGetMessages, isSuccess: successGetMessages } = useQueryData(
     ["getMessages"],
-    "/groups/recent",
+    "/conversations/recent",
   );
 
   const {
-    mutate: mutateGetGroups,
-    isSuccess: successGetGroups,
-    data: dataGetGroups,
+    mutate: mutateGetConversations,
+    isSuccess: successGetConversations,
+    data: dataGetConversations,
   } = Mutation(["getGroups"]);
 
   useEffect(() => {
     if (successGetMessages && dataGetMessages.data) {
-      const recentGroups = dataGetMessages.data as RecentGroupsResponse[];
+      const recentGroups =
+        dataGetMessages.data as RecentConversationsResponse[];
 
       setContent(renderRowsGroupChat(recentGroups, onClickGroupChat));
     }
   }, [successGetMessages]);
 
   useEffect(() => {
-    if (successGetGroups && dataGetGroups.data) {
-      const groups = dataGetGroups.data as SearchGroupResponse[];
+    if (successGetConversations && dataGetConversations.data) {
+      const groups = dataGetConversations.data as SearchConversationResponse[];
 
       setContent(renderRowsGroupChat(groups, onClickGroupChat));
     }
-  }, [successGetGroups]);
+  }, [successGetConversations]);
 
   useEffect(() => {
     if (searchDebounce == "") {
       // handle render recent groups
     } else {
-      mutateGetGroups({
+      mutateGetConversations({
         body: null,
         method: HttpMethod.GET,
-        url: "/groups?name=" + searchDebounce,
+        url: "/conversations?name=" + searchDebounce,
       });
     }
   }, [searchDebounce]);
@@ -154,9 +172,9 @@ const SidebarNavigation = ({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      {/* <SidebarFooter> */}
-      {/*   <NavUser /> */}
-      {/* </SidebarFooter> */}
+      <SidebarFooter>
+        <NavUser />
+      </SidebarFooter>
     </Sidebar>
   );
 };
@@ -218,5 +236,110 @@ export const renderRowsGroupChat = (
         </div>
       </div>
     ))
+  );
+};
+
+export const NavUser = () => {
+  const { isMobile } = useSidebar();
+  const [user, setUser] = useState<GetMeResponse | null>(null);
+
+  const { isPending, isSuccess, data } = useQueryData(["getMe"], "/me");
+  const {
+    mutate,
+    isPending: pendingLogout,
+    isSuccess: successLogout,
+  } = Mutation(["logout"]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      setUser(data.data as GetMeResponse);
+    }
+  }, [isSuccess]);
+
+  useEffect(() => {
+    if (successLogout) {
+      window.location.reload();
+    }
+  }, [successLogout]);
+
+  const handleLogout = () => {
+    mutate({
+      url: "/me/logout",
+      body: null,
+      method: HttpMethod.GET,
+    });
+  };
+
+  return isPending ? (
+    <LoaderCircle className="animate-spin" />
+  ) : (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:h-8 md:p-0"
+            >
+              <Avatar className="h-8 w-8 rounded-lg">
+                <AvatarImage
+                  src={user?.image}
+                  alt={user?.name}
+                  className="bg-gray-profile"
+                />
+                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">{user?.name}</span>
+                <span className="truncate text-xs">{user?.email}</span>
+              </div>
+              <ChevronsUpDown className="ml-auto size-4" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            side={isMobile ? "bottom" : "right"}
+            align="end"
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="p-0 font-normal">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <Avatar className="h-8 w-8 rounded-lg">
+                  <AvatarImage
+                    src={user?.image}
+                    alt={user?.name}
+                    className="bg-gray-profile"
+                  />
+                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{user?.name}</span>
+                  <span className="truncate text-xs">{user?.email}</span>
+                </div>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem>
+                <BadgeCheck />
+                Account
+              </DropdownMenuItem>
+              <AlertDialogWithMedia
+                isPending={pendingLogout}
+                onClick={handleLogout}
+                Icon={LogOut}
+                title="Log out"
+                description="Are you really want logout from whatsupp?"
+              >
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <LogOut />
+                  Log out
+                </DropdownMenuItem>
+              </AlertDialogWithMedia>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 };

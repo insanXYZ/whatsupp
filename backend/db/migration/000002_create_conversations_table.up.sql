@@ -1,7 +1,7 @@
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'type_conversations') THEN
-      CREATE TYPE type_conversations AS ENUM ( 'GROUP', 'PERSONAL');
+      CREATE TYPE type_conversations AS ENUM ( 'GROUP', 'PRIVATE');
     END IF;
 END$$;
 

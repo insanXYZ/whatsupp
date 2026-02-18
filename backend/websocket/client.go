@@ -14,6 +14,7 @@ import (
 	"whatsupp-backend/dto"
 	"whatsupp-backend/dto/converter"
 	"whatsupp-backend/entity"
+	"whatsupp-backend/util"
 
 	"github.com/gorilla/websocket"
 )
@@ -98,12 +99,22 @@ func (c *Client) ReadPump() {
 
 			if event.Event != string(dto.EVENT_SEND_MESSAGE) {
 				//handle invalid event
+				fmt.Println("not send message event:", event.Event)
 				continue
 			}
 
-			req, ok := event.Data.(dto.SendMessageRequestWs)
-			if !ok {
-				// handle invalid schema
+			dataByte, err := json.Marshal(event.Data)
+			if err != nil {
+				// handle
+
+				fmt.Println("error marshal:", err.Error())
+				continue
+			}
+
+			var req dto.SendMessageRequestWs
+			err = json.Unmarshal(dataByte, &req)
+			if err != nil {
+				fmt.Println("error umarshal:", err.Error())
 				continue
 			}
 
@@ -112,7 +123,11 @@ func (c *Client) ReadPump() {
 				Sender:  c.User,
 			}
 
-			err := c.HandlerIncomingMessage(ctx, broadcast, c.Hub)
+			if bc, err := util.MarshalIndent(broadcast); err == nil {
+				fmt.Println(bc)
+			}
+
+			err = c.HandlerIncomingMessage(ctx, broadcast, c.Hub)
 			if err != nil {
 				fmt.Println("error handling incoming message:", err.Error())
 				continue
@@ -140,7 +155,7 @@ func (c *Client) WritePump() {
 	}()
 	for {
 		select {
-		case message, ok := <-c.Send:
+		case broadcast, ok := <-c.Send:
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The Hub closed the channel.
@@ -153,12 +168,19 @@ func (c *Client) WritePump() {
 				return
 			}
 
+			var tmpConversationId *string
+
+			if broadcast.Request.TmpConversationID != nil && c.User.ID == broadcast.Sender.ID {
+				tmpConversationId = broadcast.Request.TmpConversationID
+			}
+
 			response := &dto.EventMessageWs{
 				Event: string(dto.EVENT_NEW_MESSAGE),
 				Data: &dto.NewMessageResponse{
-					IsMe:           message.Message.UserID == c.User.ID,
-					ConversationID: *message.Request.ConversationID,
-					Message:        converter.MessageEntityToDto(message.Message),
+					IsMe:              broadcast.Message.UserID == c.User.ID,
+					ConversationID:    *broadcast.Request.ConversationID,
+					TmpConversationID: tmpConversationId,
+					Message:           converter.MessageEntityToDto(broadcast.Message),
 				},
 			}
 
@@ -173,7 +195,7 @@ func (c *Client) WritePump() {
 			// Add queued chat messages to the current websocket message.
 			n := len(c.Send)
 			for range n {
-				message, ok := <-c.Send
+				broadcast, ok := <-c.Send
 				if !ok {
 					continue
 				}
@@ -181,9 +203,10 @@ func (c *Client) WritePump() {
 				response := &dto.EventMessageWs{
 					Event: string(dto.EVENT_NEW_MESSAGE),
 					Data: &dto.NewMessageResponse{
-						IsMe:           message.Message.UserID == c.User.ID,
-						ConversationID: *message.Request.ConversationID,
-						Message:        converter.MessageEntityToDto(message.Message),
+						IsMe:              broadcast.Message.UserID == c.User.ID,
+						ConversationID:    *broadcast.Request.ConversationID,
+						TmpConversationID: broadcast.Request.TmpConversationID,
+						Message:           converter.MessageEntityToDto(broadcast.Message),
 					},
 				}
 
