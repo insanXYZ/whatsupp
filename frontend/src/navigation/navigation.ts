@@ -1,9 +1,8 @@
-import { Contact, Inbox, LucideIcon, Settings } from "lucide-react";
+import { Contact, Inbox, LucideIcon, Search, Settings } from "lucide-react";
 
 export interface NavMain {
   title: string;
   isActive: boolean;
-  // icon: React.ForwardRefExoticComponent<Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>>
   icon: LucideIcon;
 }
 
@@ -18,8 +17,13 @@ export const Navigations: NavMain[] = [
     isActive: true,
   },
   {
-    title: "Friend",
+    title: "Contacts",
     icon: Contact,
+    isActive: true,
+  },
+  {
+    title: "Search",
+    icon: Search,
     isActive: true,
   },
   {

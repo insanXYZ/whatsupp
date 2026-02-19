@@ -11,38 +11,44 @@ import {
   RenderRowsConversationChat,
 } from "@/components/chat/sidebar";
 import { RowConversationChat } from "@/dto/conversation-dto.ts";
-import { GetMessageResponse, ItemGetMessageResponse } from "@/dto/message-dto";
+import { GetMessageResponse } from "@/dto/message-dto";
 import {
-  EVENT_NEW_CONVERSATION,
-  EVENT_NEW_MESSAGE,
   EVENT_SEND_MESSAGE,
   EventWs,
   NewConversationResponse,
   NewMessageResponse,
   SendMessageRequest,
 } from "@/dto/ws-dto";
-import { ConnectIdb } from "@/utils/indexdb";
+import { useChatSocket } from "@/hooks/use-chat-socket";
+import { useConversations } from "@/hooks/use-conversations";
+import { useMessages } from "@/hooks/use-messages";
 import { HttpMethod, Mutation, useQueryData } from "@/utils/tanstack";
-import { ToastError } from "@/utils/toast";
-import { ConnectWS } from "@/utils/ws";
-import { IDBPDatabase } from "idb";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect } from "react";
 
 export default function Page() {
-  const wsRef = useRef<WebSocket | null>(null);
-  const idbRef = useRef<IDBPDatabase | null>(null);
+  const { setMessages, appendMessage, messagesByChatKey } = useMessages();
+  const {
+    activeChat,
+    setActiveChat,
+    conversations,
+    addConversation,
+    addConversations,
+    searchedConversations,
+    setSearchedConversations,
+  } = useConversations();
 
-  const [connect, setConnect] = useState<boolean>(false);
-  const [conversationChat, setConversationChat] = useState<
-    RowConversationChat[]
-  >([]);
-  const [conversationChatSearched, setConversationChatSearched] = useState<
-    RowConversationChat[]
-  >([]);
-  const [activeChat, setActiveChat] = useState<RowConversationChat>();
-  const [messagesByChatKey, setMessagesByChatKey] = useState<
-    Record<string, ItemGetMessageResponse[]>
-  >({});
+  const { send, connected } = useChatSocket({
+    onNewMessage: (event) => {
+      const data = event.data as NewMessageResponse;
+      const message = data.message;
+
+      appendMessage(data.conversation_id, message);
+    },
+    onNewConversation: (event) => {
+      const newConversation = event.data as NewConversationResponse;
+      addConversation(newConversation);
+    },
+  });
 
   const {
     mutate: mutateGetMessages,
@@ -67,7 +73,7 @@ export default function Page() {
       data: v,
     };
 
-    wsRef.current?.send(JSON.stringify(req));
+    send(req);
   };
 
   const onClickConversationChat = (v: RowConversationChat) => {
@@ -90,7 +96,7 @@ export default function Page() {
         url: "/conversations?name=" + v,
       });
     } else {
-      setConversationChatSearched(() => []);
+      setSearchedConversations([]);
     }
   };
 
@@ -99,12 +105,7 @@ export default function Page() {
       const data = dataGetMessages.data as GetMessageResponse;
       const messages = data.messages;
 
-      const chatKey = `conversation-${data.conversation_id}`;
-
-      setMessagesByChatKey((prev) => ({
-        ...prev,
-        [chatKey]: messages,
-      }));
+      setMessages(data.conversation_id, messages);
     }
   }, [isSuccessGetMessages]);
 
@@ -112,8 +113,7 @@ export default function Page() {
     if (isSuccessGetRecentConversations && dataGetRecentConversations.data) {
       const conversations =
         dataGetRecentConversations.data as RowConversationChat[];
-
-      setConversationChat((prev) => [...prev, ...conversations]);
+      addConversations(conversations);
     }
   }, [isSuccessGetRecentConversations]);
 
@@ -123,67 +123,12 @@ export default function Page() {
         dataSearchConversations.data as RowConversationChat[];
 
       conversations
-        ? setConversationChatSearched(() => [...conversations])
-        : setConversationChatSearched(() => []);
+        ? setSearchedConversations(conversations)
+        : setSearchedConversations([]);
     }
   }, [isSuccessSearchConversations]);
 
-  useEffect(() => {
-    ConnectIdb()
-      .then((db) => {
-        idbRef.current = db;
-      })
-      .catch(() => {
-        ToastError(
-          "Error connected IndexedDB",
-          "Please refresh this page, or if thats not help, you can send issues to https://github.com/insanXYZ/whatsupp/issues",
-        );
-      });
-
-    wsRef.current = ConnectWS({
-      onClose: (v) => {
-        console.log("close ", v);
-        setConnect(false);
-      },
-      onError: (v) => {
-        console.log("error ", v);
-        setConnect(false);
-      },
-      onMessage: (v) => {
-        const event = JSON.parse(v.data) as EventWs;
-        console.log(event);
-
-        switch (event.event) {
-          case EVENT_NEW_CONVERSATION:
-            const newConversation = event.data as NewConversationResponse;
-            setConversationChat((prev) => [newConversation, ...prev]);
-          case EVENT_NEW_MESSAGE:
-            const data = event.data as NewMessageResponse;
-            const message = data.message;
-
-            const chatKey = `conversation-${data.conversation_id}`;
-
-            setMessagesByChatKey((prev) => ({
-              ...prev,
-              [chatKey]: [...(prev[chatKey] ?? []), message],
-            }));
-        }
-      },
-      onOpen: () => {
-        setConnect(true);
-      },
-    });
-
-    return () => {
-      wsRef.current!.close();
-    };
-  }, []);
-
-  useEffect(() => {
-    // console.log(JSON.stringify(messagesByChatKey));
-  }, [messagesByChatKey]);
-
-  return !connect ? (
+  return !connected ? (
     <ChatBannerLoading />
   ) : (
     <>
@@ -192,9 +137,9 @@ export default function Page() {
         contentSidebarDetail={
           <RenderRowsConversationChat
             conversations={
-              conversationChatSearched.length == 0
-                ? conversationChat
-                : conversationChatSearched
+              searchedConversations.length == 0
+                ? conversations
+                : searchedConversations
             }
             onClick={onClickConversationChat}
           />
