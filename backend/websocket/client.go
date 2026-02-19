@@ -14,7 +14,6 @@ import (
 	"whatsupp-backend/dto"
 	"whatsupp-backend/dto/converter"
 	"whatsupp-backend/entity"
-	"whatsupp-backend/util"
 
 	"github.com/gorilla/websocket"
 )
@@ -123,10 +122,6 @@ func (c *Client) ReadPump() {
 				Sender:  c.User,
 			}
 
-			if bc, err := util.MarshalIndent(broadcast); err == nil {
-				fmt.Println(bc)
-			}
-
 			err = c.HandlerIncomingMessage(ctx, broadcast, c.Hub)
 			if err != nil {
 				fmt.Println("error handling incoming message:", err.Error())
@@ -177,10 +172,9 @@ func (c *Client) WritePump() {
 			response := &dto.EventMessageWs{
 				Event: string(dto.EVENT_NEW_MESSAGE),
 				Data: &dto.NewMessageResponse{
-					IsMe:              broadcast.Message.UserID == c.User.ID,
 					ConversationID:    *broadcast.Request.ConversationID,
 					TmpConversationID: tmpConversationId,
-					Message:           converter.MessageEntityToDto(broadcast.Message),
+					Message:           converter.MessageEntitytoItemGetMessagesResponseDto(broadcast.Message, c.User.ID),
 				},
 			}
 
@@ -203,10 +197,9 @@ func (c *Client) WritePump() {
 				response := &dto.EventMessageWs{
 					Event: string(dto.EVENT_NEW_MESSAGE),
 					Data: &dto.NewMessageResponse{
-						IsMe:              broadcast.Message.UserID == c.User.ID,
 						ConversationID:    *broadcast.Request.ConversationID,
-						TmpConversationID: broadcast.Request.TmpConversationID,
-						Message:           converter.MessageEntityToDto(broadcast.Message),
+						TmpConversationID: tmpConversationId,
+						Message:           converter.MessageEntitytoItemGetMessagesResponseDto(broadcast.Message, broadcast.Sender.ID),
 					},
 				}
 

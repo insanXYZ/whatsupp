@@ -27,12 +27,3 @@ interface MessageEntity {
   message: string;
   created_at: string;
 }
-
-interface GetMessageResponse {
-  conversation_id: number;
-  messages: ItemGetMessageResponse[];
-}
-
-interface ItemGetMessageResponse extends MessageEntity {
-  is_me: boolean;
-}

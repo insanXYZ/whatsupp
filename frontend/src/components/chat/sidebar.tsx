@@ -33,61 +33,23 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { AlertDialogWithMedia } from "../ui/alert-dialog-media";
-import {
-  RecentConversationsResponse,
-  SearchConversationResponse,
-} from "@/dto/conversation-dto.ts";
+import { RowConversationChat } from "@/dto/conversation-dto.ts";
 
 type AppSidebarProps = {
-  onClickGroupChat: (v: RowGroupChat) => void;
+  contentSidebarDetail?: ReactNode;
+  onSearch: (v: string) => void;
 };
 
-export const AppSidebar = ({ onClickGroupChat }: AppSidebarProps) => {
+export const AppSidebar = ({
+  contentSidebarDetail,
+  onSearch,
+}: AppSidebarProps) => {
   const [activeItem, setActiveItem] = useState<string>(NAV_TITLE_CHAT);
   const [search, setSearch] = useState<string>("");
   const [searchDebounce] = useDebounce(search, 600);
 
-  // sidebar detail
-  const [content, setContent] = useState<ReactNode>(null);
-
-  const { data: dataGetMessages, isSuccess: successGetMessages } = useQueryData(
-    ["getMessages"],
-    "/conversations/recent",
-  );
-
-  const {
-    mutate: mutateGetConversations,
-    isSuccess: successGetConversations,
-    data: dataGetConversations,
-  } = Mutation(["getGroups"]);
-
   useEffect(() => {
-    if (successGetMessages && dataGetMessages.data) {
-      const recentGroups =
-        dataGetMessages.data as RecentConversationsResponse[];
-
-      setContent(renderRowsGroupChat(recentGroups, onClickGroupChat));
-    }
-  }, [successGetMessages]);
-
-  useEffect(() => {
-    if (successGetConversations && dataGetConversations.data) {
-      const groups = dataGetConversations.data as SearchConversationResponse[];
-
-      setContent(renderRowsGroupChat(groups, onClickGroupChat));
-    }
-  }, [successGetConversations]);
-
-  useEffect(() => {
-    if (searchDebounce == "") {
-      // handle render recent groups
-    } else {
-      mutateGetConversations({
-        body: null,
-        method: HttpMethod.GET,
-        url: "/conversations?name=" + searchDebounce,
-      });
-    }
+    onSearch(searchDebounce);
   }, [searchDebounce]);
 
   return (
@@ -100,7 +62,7 @@ export const AppSidebar = ({ onClickGroupChat }: AppSidebarProps) => {
         onActiveItemChange={setActiveItem}
       />
       <SidebarDetail
-        content={content}
+        content={contentSidebarDetail}
         title={activeItem}
         onSearch={setSearch}
       />
@@ -206,13 +168,18 @@ const SidebarDetail = ({ title, content, onSearch }: SidebarDetailProps) => {
   );
 };
 
-export const renderRowsGroupChat = (
-  groups: RecentGroupsResponse[],
-  onClick: (r: RecentGroupsResponse) => any,
-) => {
+type RenderRowsConversationChatProps = {
+  conversations: RowConversationChat[];
+  onClick: (r: RowConversationChat) => void;
+};
+
+export const RenderRowsConversationChat = ({
+  conversations,
+  onClick,
+}: RenderRowsConversationChatProps) => {
   return (
-    groups &&
-    groups.map((g) => (
+    conversations &&
+    conversations.map((g) => (
       <div
         onClick={() => onClick(g)}
         key={g.id}

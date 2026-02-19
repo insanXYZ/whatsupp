@@ -43,11 +43,12 @@ type SendMessageRequestWs struct {
 	ConversationID    *int              `json:"conversation_id,omitempty"`
 }
 
+type MessageOnNewMessageResponse = ItemGetMessagesResponse
+
 type NewMessageResponse struct {
-	IsMe              bool    `json:"is_me,omitempty"`
-	ConversationID    int     `json:"conversation_id,omitempty"`
-	TmpConversationID *string `json:"tmp_conversation_id,omitempty"`
-	*Message
+	ConversationID    int                          `json:"conversation_id,omitempty"`
+	TmpConversationID *string                      `json:"tmp_conversation_id,omitempty"`
+	Message           *MessageOnNewMessageResponse `json:"message,omitempty"`
 }
 
 type ReadPumpClient = EventMessageWs

@@ -211,9 +211,17 @@ func (ms *MessageService) handleIncomingMessage(
 			}
 		}
 
+		var conversationId int
+
+		if bc.Request.ConversationID != nil {
+			conversationId = *bc.Request.ConversationID
+		} else {
+			conversationId = conversation.ID
+		}
+
 		newMessage := &entity.Message{
 			UserID:         bc.Sender.ID,
-			ConversationID: conversation.ID,
+			ConversationID: conversationId,
 			Message:        bc.Request.Message,
 		}
 
@@ -224,16 +232,15 @@ func (ms *MessageService) handleIncomingMessage(
 
 		bc.Message = newMessage
 		bc.Message.User = bc.Sender
+		bc.Request.ConversationID = &conversationId
 
-		bc.Request.ConversationID = &conversation.ID
-
-		if !hub.IsExistConversation(conversation.ID) {
-			memberIds, err := memberTx.GetUserIdsWithConversationId(ctx, conversation.ID)
+		if !hub.IsExistConversation(conversationId) {
+			memberIds, err := memberTx.GetUserIdsWithConversationId(ctx, conversationId)
 			if err != nil {
 				return err
 			}
 
-			hub.CreateConversation(conversation.ID, memberIds)
+			hub.CreateConversation(conversationId, memberIds)
 		}
 
 		if isNewConversation {
@@ -244,7 +251,7 @@ func (ms *MessageService) handleIncomingMessage(
 				Name:             bc.Sender.Name,
 				Bio:              bc.Sender.Bio,
 				ConversationType: entity.CONV_TYPE_PRIVATE,
-				ConversationID:   &conversation.ID,
+				ConversationID:   &conversationId,
 			})
 			if err != nil {
 				return err
@@ -265,7 +272,7 @@ func (ms *MessageService) handleIncomingMessage(
 				Name:             receiver.Name,
 				Bio:              receiver.Bio,
 				ConversationType: entity.CONV_TYPE_PRIVATE,
-				ConversationID:   &conversation.ID,
+				ConversationID:   &conversationId,
 			})
 
 			if err != nil {
