@@ -37,20 +37,34 @@ import { RowConversationChat } from "@/dto/conversation-dto.ts";
 
 type AppSidebarProps = {
   contentSidebarDetail?: ReactNode;
+  activeItem: string;
+  onChangeActiveItem: (v: string) => void;
   onSearch: (v: string) => void;
 };
 
 export const AppSidebar = ({
   contentSidebarDetail,
+  onChangeActiveItem,
+  activeItem,
   onSearch,
 }: AppSidebarProps) => {
-  const [activeItem, setActiveItem] = useState<string>(NAV_TITLE_CHAT);
   const [search, setSearch] = useState<string>("");
   const [searchDebounce] = useDebounce(search, 600);
 
   useEffect(() => {
     onSearch(searchDebounce);
   }, [searchDebounce]);
+
+  useEffect(() => {
+    onChangeActiveItem(NAV_TITLE_CHAT);
+  }, []);
+
+  const handleChangeActiveItem = (v: string) => {
+    if (v != activeItem) {
+      setSearch("");
+      onChangeActiveItem(v);
+    }
+  };
 
   return (
     <Sidebar
@@ -59,11 +73,12 @@ export const AppSidebar = ({
     >
       <SidebarNavigation
         activeItem={activeItem}
-        onActiveItemChange={setActiveItem}
+        onActiveItemChange={handleChangeActiveItem}
       />
       <SidebarDetail
         content={contentSidebarDetail}
         title={activeItem}
+        search={search}
         onSearch={setSearch}
       />
     </Sidebar>
@@ -144,10 +159,16 @@ const SidebarNavigation = ({
 type SidebarDetailProps = {
   title: string;
   content?: ReactNode;
+  search: string;
   onSearch: (v: string) => void;
 };
 
-const SidebarDetail = ({ title, content, onSearch }: SidebarDetailProps) => {
+const SidebarDetail = ({
+  title,
+  content,
+  search,
+  onSearch,
+}: SidebarDetailProps) => {
   return (
     <Sidebar collapsible="none" className="hidden flex-1 md:flex">
       <SidebarHeader className="gap-3.5 border-b p-4">
@@ -155,6 +176,7 @@ const SidebarDetail = ({ title, content, onSearch }: SidebarDetailProps) => {
           <div className="text-foreground text-base font-medium">{title}</div>
         </div>
         <SidebarInput
+          value={search}
           onChange={(v) => onSearch(v.target.value)}
           placeholder="Type to search..."
         />

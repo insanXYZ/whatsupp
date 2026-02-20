@@ -12,20 +12,18 @@ import {
 } from "@/components/chat/sidebar";
 import { RowConversationChat } from "@/dto/conversation-dto.ts";
 import { GetMessageResponse } from "@/dto/message-dto";
-import {
-  EVENT_SEND_MESSAGE,
-  EventWs,
-  NewConversationResponse,
-  NewMessageResponse,
-  SendMessageRequest,
-} from "@/dto/ws-dto";
+import { EVENT_SEND_MESSAGE, EventWs, SendMessageRequest } from "@/dto/ws-dto";
 import { useChatSocket } from "@/hooks/use-chat-socket";
 import { useConversations } from "@/hooks/use-conversations";
+import { useIdb } from "@/hooks/use-idb";
 import { useMessages } from "@/hooks/use-messages";
+import { NAV_TITLE_CHAT, NAV_TITLE_SEARCH } from "@/navigation/navigation";
 import { HttpMethod, Mutation, useQueryData } from "@/utils/tanstack";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function Page() {
+  const [activeItem, setActiveItem] = useState<string>(NAV_TITLE_CHAT);
+
   const { setMessages, appendMessage, messagesByChatKey } = useMessages();
   const {
     activeChat,
@@ -33,20 +31,41 @@ export default function Page() {
     conversations,
     addConversation,
     addConversations,
-    searchedConversations,
-    setSearchedConversations,
+    overwriteConversations,
   } = useConversations();
 
-  const { send, connected } = useChatSocket({
-    onNewMessage: (event) => {
-      const data = event.data as NewMessageResponse;
-      const message = data.message;
+  const {
+    AppendConversationsIdb,
+    SearchConversationsByNameIdb,
+    GetAllConversationsIdb,
+    ReplaceConversationsIdb,
+    AppendConversationIdb,
+  } = useIdb();
 
+  const { send, connected } = useChatSocket({
+    onNewMessage: (data) => {
+      const message = data.message;
       appendMessage(data.conversation_id, message);
     },
-    onNewConversation: (event) => {
-      const newConversation = event.data as NewConversationResponse;
-      addConversation(newConversation);
+    onNewConversation: async (data) => {
+      try {
+        AppendConversationIdb(data);
+
+        if (activeItem === NAV_TITLE_SEARCH && !activeChat?.conversation_id) {
+          if (
+            activeChat?.id === data.id &&
+            activeChat.conversation_type === data.conversation_type
+          ) {
+            setActiveChat(data);
+          }
+        }
+
+        if (activeItem === NAV_TITLE_CHAT) {
+          addConversation(data);
+        }
+      } catch (error) {
+        console.log(error);
+      }
     },
   });
 
@@ -88,15 +107,43 @@ export default function Page() {
     }
   };
 
-  const onSearch = (v: string) => {
-    if (v != "") {
-      mutateSearchConversations({
-        body: null,
-        method: HttpMethod.GET,
-        url: "/conversations?name=" + v,
-      });
-    } else {
-      setSearchedConversations([]);
+  const onSearch = async (v: string) => {
+    try {
+      switch (activeItem) {
+        case NAV_TITLE_CHAT:
+          const conversations = await SearchConversationsByNameIdb(v);
+          overwriteConversations(conversations);
+          break;
+        case NAV_TITLE_SEARCH:
+          if (v != "") {
+            mutateSearchConversations({
+              body: null,
+              method: HttpMethod.GET,
+              url: "/conversations?name=" + v,
+            });
+          }
+          break;
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const onChangeActiveItem = async (v: string) => {
+    setActiveItem(v);
+
+    try {
+      switch (v) {
+        case NAV_TITLE_SEARCH:
+          overwriteConversations([]);
+          break;
+        case NAV_TITLE_CHAT:
+          const allConversations = await GetAllConversationsIdb();
+          overwriteConversations(allConversations);
+          break;
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -113,34 +160,34 @@ export default function Page() {
     if (isSuccessGetRecentConversations && dataGetRecentConversations.data) {
       const conversations =
         dataGetRecentConversations.data as RowConversationChat[];
-      addConversations(conversations);
+
+      ReplaceConversationsIdb(conversations);
+
+      if (activeItem === NAV_TITLE_CHAT) {
+        addConversations(conversations);
+      }
     }
   }, [isSuccessGetRecentConversations]);
 
   useEffect(() => {
-    if (isSuccessSearchConversations) {
-      const conversations =
-        dataSearchConversations.data as RowConversationChat[];
+    if (isSuccessSearchConversations && activeItem == NAV_TITLE_SEARCH) {
+      const data = dataSearchConversations.data as RowConversationChat[];
 
-      conversations
-        ? setSearchedConversations(conversations)
-        : setSearchedConversations([]);
+      overwriteConversations(data);
     }
   }, [isSuccessSearchConversations]);
 
-  return !connected ? (
+  return !connected && !isSuccessGetRecentConversations ? (
     <ChatBannerLoading />
   ) : (
     <>
       <AppSidebar
+        activeItem={activeItem}
+        onChangeActiveItem={onChangeActiveItem}
         onSearch={onSearch}
         contentSidebarDetail={
           <RenderRowsConversationChat
-            conversations={
-              searchedConversations.length == 0
-                ? conversations
-                : searchedConversations
-            }
+            conversations={conversations}
             onClick={onClickConversationChat}
           />
         }
@@ -158,14 +205,10 @@ export default function Page() {
           activeChat && (
             <InsetChat
               messages={
-                activeChat
-                  ? activeChat.conversation_id
-                    ? messagesByChatKey[
-                    `conversation-${activeChat.conversation_id}`
-                    ]
-                    : messagesByChatKey[
-                    `tmp-${activeChat.conversation_type}-${activeChat.id}`
-                    ]
+                activeChat.conversation_id
+                  ? messagesByChatKey[
+                  `conversation-${activeChat.conversation_id}`
+                  ]
                   : []
               }
               onSubmit={handleSendMessage}

@@ -7,27 +7,28 @@ export interface NavMain {
 }
 
 export const NAV_TITLE_CHAT = "Chat",
-  NAV_TITLE_FRIEND = "Friend",
-  NAV_TITLE_Setting = "Setting";
+  NAV_TITLE_SETTING = "Setting",
+  NAV_TITLE_SEARCH = "Search",
+  NAV_TITLE_CONTACTS = "Contacts";
 
 export const Navigations: NavMain[] = [
   {
-    title: "Chat",
+    title: NAV_TITLE_CHAT,
     icon: Inbox,
     isActive: true,
   },
   {
-    title: "Contacts",
+    title: NAV_TITLE_CONTACTS,
     icon: Contact,
     isActive: true,
   },
   {
-    title: "Search",
+    title: NAV_TITLE_SEARCH,
     icon: Search,
     isActive: true,
   },
   {
-    title: "Setting",
+    title: NAV_TITLE_SETTING,
     icon: Settings,
     isActive: true,
   },

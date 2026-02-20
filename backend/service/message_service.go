@@ -160,7 +160,7 @@ func (ms *MessageService) handleIncomingMessage(
 			switch bc.Request.Target.Type {
 			case dto.TYPE_TARGET_GROUP:
 				conversation, err = conversationTx.TakeGroupConversationByUserAndConversationId(ctx, bc.Sender.ID, bc.Request.Target.ID)
-			case dto.TYPE_TARGET_USER:
+			case dto.TYPE_TARGET_PRIVATE:
 				senderId := bc.Sender.ID
 				receiverId := bc.Request.Target.ID
 				conversation, err = conversationTx.TakePrivateConversationBySenderAndReceiverId(ctx, senderId, receiverId)
@@ -170,7 +170,7 @@ func (ms *MessageService) handleIncomingMessage(
 
 			isNotFound := errors.Is(err, gorm.ErrRecordNotFound)
 
-			if err != nil && ((bc.Request.Target.Type == dto.TYPE_TARGET_GROUP) || (!isNotFound && bc.Request.Target.Type == dto.TYPE_TARGET_USER)) {
+			if err != nil && ((bc.Request.Target.Type == dto.TYPE_TARGET_GROUP) || (!isNotFound && bc.Request.Target.Type == dto.TYPE_TARGET_PRIVATE)) {
 				return err
 			}
 

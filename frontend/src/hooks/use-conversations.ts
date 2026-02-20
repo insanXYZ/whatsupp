@@ -1,5 +1,5 @@
 import { RowConversationChat } from "@/dto/conversation-dto.ts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function useConversations() {
   const [conversations, setConversations] = useState<RowConversationChat[]>([]);
@@ -16,10 +16,15 @@ export function useConversations() {
     setConversations((prev) => [...prev, ...convs]);
   };
 
+  const overwriteConversations = (convs: RowConversationChat[]) => {
+    setConversations(convs);
+  };
+
   return {
     conversations,
     addConversation,
     addConversations,
+    overwriteConversations,
     activeChat,
     setActiveChat,
     searchedConversations,

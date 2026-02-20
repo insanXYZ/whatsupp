@@ -2,13 +2,15 @@ import {
   EVENT_NEW_CONVERSATION,
   EVENT_NEW_MESSAGE,
   EventWs,
+  NewConversationResponse,
+  NewMessageResponse,
 } from "@/dto/ws-dto";
 import { ConnectWS } from "@/utils/ws";
 import { useEffect, useRef, useState } from "react";
 
 type useChatSocketProps = {
-  onNewMessage: (v: EventWs) => void;
-  onNewConversation: (v: EventWs) => void;
+  onNewMessage: (data: NewMessageResponse) => void;
+  onNewConversation: (data: NewConversationResponse) => void;
 };
 
 export function useChatSocket({
@@ -16,7 +18,15 @@ export function useChatSocket({
   onNewConversation,
 }: useChatSocketProps) {
   const wsRef = useRef<WebSocket | null>(null);
-  const [connected, setConnected] = useState<boolean>(false);
+  const [connected, setConnected] = useState(false);
+
+  const onNewMessageRef = useRef(onNewMessage);
+  const onNewConversationRef = useRef(onNewConversation);
+
+  useEffect(() => {
+    onNewMessageRef.current = onNewMessage;
+    onNewConversationRef.current = onNewConversation;
+  });
 
   useEffect(() => {
     wsRef.current = ConnectWS({
@@ -24,15 +34,15 @@ export function useChatSocket({
       onClose: () => setConnected(false),
       onError: () => setConnected(false),
       onMessage: (v) => {
-        const event = JSON.parse(v.data);
+        const event = JSON.parse(v.data) as EventWs;
 
         switch (event.event) {
           case EVENT_NEW_CONVERSATION:
-            onNewConversation(event.data);
+            onNewConversationRef.current(event.data as NewConversationResponse);
             break;
 
           case EVENT_NEW_MESSAGE:
-            onNewMessage(event.data);
+            onNewMessageRef.current(event.data as NewMessageResponse);
             break;
         }
       },

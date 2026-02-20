@@ -38,7 +38,7 @@ func (cr *ConversationRepository) SearchConversationWithNameAndUserId(
 
 	query := `
 				SELECT 
-				'USER' as conversation_type,
+				'PRIVATE' as conversation_type,
 				u.id,
 				u.name,
 				u.image,

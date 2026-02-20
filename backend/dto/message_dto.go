@@ -22,8 +22,8 @@ const (
 )
 
 const (
-	TYPE_TARGET_USER  targetSendMessage = "USER"
-	TYPE_TARGET_GROUP targetSendMessage = "GROUP"
+	TYPE_TARGET_PRIVATE targetSendMessage = "PRIVATE"
+	TYPE_TARGET_GROUP   targetSendMessage = "GROUP"
 )
 
 type EventMessageWs struct {
