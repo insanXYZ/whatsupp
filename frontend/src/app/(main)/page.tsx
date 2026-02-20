@@ -157,14 +157,18 @@ export default function Page() {
   }, [isSuccessGetMessages]);
 
   useEffect(() => {
-    if (isSuccessGetRecentConversations && dataGetRecentConversations.data) {
-      const conversations =
-        dataGetRecentConversations.data as RowConversationChat[];
+    if (isSuccessGetRecentConversations) {
+      const conversations = dataGetRecentConversations.data
+        ? (dataGetRecentConversations.data as RowConversationChat[])
+        : [];
+
+      console.log("conversations get", conversations);
 
       ReplaceConversationsIdb(conversations);
 
       if (activeItem === NAV_TITLE_CHAT) {
-        addConversations(conversations);
+        console.log("kana chat");
+        overwriteConversations(conversations);
       }
     }
   }, [isSuccessGetRecentConversations]);
