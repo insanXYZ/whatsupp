@@ -1,6 +1,9 @@
 package dto
 
-import "time"
+import (
+	"mime/multipart"
+	"time"
+)
 
 type Conversation struct {
 	ID               int       `json:"id,omitempty"`
@@ -29,3 +32,9 @@ type SearchConversationResponse struct {
 type LoadRecentConversation = SearchConversationResponse
 
 type NewConversationResponse = SearchConversationResponse
+
+type CreateGroupConversationRequest struct {
+	Name  string                `form:"name" validate:"required,min=3,max=25"`
+	Bio   string                `form:"bio" `
+	Image *multipart.FileHeader `validate:"-"`
+}

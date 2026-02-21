@@ -32,9 +32,10 @@ func SetRoute(cfg *RouteConfig) {
 	user.GET("", cfg.userController.Me)
 	user.GET("/logout", cfg.userController.Logout)
 
-	group := hasJwtRoute.Group("/conversations")
-	group.GET("/recent", cfg.conversationController.LoadRecentConversations)
-	group.GET("", cfg.conversationController.Lists)
+	conversation := hasJwtRoute.Group("/conversations")
+	conversation.GET("/recent", cfg.conversationController.LoadRecentConversations)
+	conversation.GET("", cfg.conversationController.Lists)
+	conversation.POST("", cfg.conversationController.CreateGroupConversation)
 
 	chat := hasJwtRoute.Group("/messages")
 	chat.POST("/attachments", cfg.messageController.UploadFileAttachments)

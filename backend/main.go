@@ -47,8 +47,8 @@ func main() {
 	// init service
 
 	messageService := service.NewMessageService(validator, conversationRepository, memberRepository, messageRepository, messageAttachmentRepository, userRepository, hub, clientStorage)
-	userService := service.NewUserService(validator, userRepository)
-	conversationService := service.NewConversationService(validator, memberRepository, conversationRepository)
+	userService := service.NewUserService(validator, userRepository, hub)
+	conversationService := service.NewConversationService(validator, memberRepository, conversationRepository, clientStorage, hub)
 
 	// init controller
 

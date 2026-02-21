@@ -10,7 +10,10 @@ import {
   AppSidebar,
   RenderRowsConversationChat,
 } from "@/components/chat/sidebar";
-import { RowConversationChat } from "@/dto/conversation-dto.ts";
+import {
+  CreateGroupConversationRequest,
+  RowConversationChat,
+} from "@/dto/conversation-dto.ts";
 import { GetMessageResponse } from "@/dto/message-dto";
 import { EVENT_SEND_MESSAGE, EventWs, SendMessageRequest } from "@/dto/ws-dto";
 import { useChatSocket } from "@/hooks/use-chat-socket";
@@ -70,6 +73,12 @@ export default function Page() {
   });
 
   const {
+    mutate: mutateCreateGroupConversation,
+    isSuccess: isSuccessCreateGroupConversation,
+    data: dataCreateGroupConversation,
+  } = Mutation(["getMessages"]);
+
+  const {
     mutate: mutateGetMessages,
     isSuccess: isSuccessGetMessages,
     data: dataGetMessages,
@@ -94,6 +103,10 @@ export default function Page() {
 
     send(req);
   };
+
+  const handleCreateConversationGroup = (
+    v: CreateGroupConversationRequest,
+  ) => { };
 
   const onClickConversationChat = (v: RowConversationChat) => {
     setActiveChat(v);
@@ -162,12 +175,9 @@ export default function Page() {
         ? (dataGetRecentConversations.data as RowConversationChat[])
         : [];
 
-      console.log("conversations get", conversations);
-
       ReplaceConversationsIdb(conversations);
 
       if (activeItem === NAV_TITLE_CHAT) {
-        console.log("kana chat");
         overwriteConversations(conversations);
       }
     }

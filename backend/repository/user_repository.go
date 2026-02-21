@@ -27,10 +27,16 @@ func (u *UserRepository) WithTx(tx *gorm.DB) *UserRepository {
 	}
 }
 
-func (u *UserRepository) TakeByEmail(ctx context.Context, email string, dst *entity.User) error {
-	return u.db.WithContext(ctx).Take(dst, "email = ?", email).Error
+func (u *UserRepository) TakeByEmail(ctx context.Context, email string) (*entity.User, error) {
+	dst := new(entity.User)
+
+	err := u.db.WithContext(ctx).Take(dst, "email = ?", email).Error
+	return dst, err
 }
 
-func (u *UserRepository) FindByName(ctx context.Context, name string, dst *[]entity.User) error {
-	return u.db.WithContext(ctx).Where("name LIKE ?", name).Find(dst).Error
+func (u *UserRepository) FindByName(ctx context.Context, name string) ([]*entity.User, error) {
+	var dst []*entity.User
+
+	err := u.db.WithContext(ctx).Where("name LIKE ?", name).Find(dst).Error
+	return dst, err
 }

@@ -78,12 +78,12 @@ func (u *UserController) UpdateMe(c *echo.Context) error {
 
 	claims := util.GetClaims(c)
 
-	err = u.userService.HandleUpdateUser(ctx, req, claims)
+	user, err := u.userService.HandleUpdateUser(ctx, req, claims)
 	if err != nil {
 		return util.ResponseErr(c, message.ERR_UPDATE_ME, err)
 	}
 
-	return util.ResponseOk(c, message.SUCCESS_UPDATE_ME, nil)
+	return util.ResponseOk(c, message.SUCCESS_UPDATE_ME, converter.UserEntityToDto(user))
 }
 
 func (u *UserController) Me(c *echo.Context) error {

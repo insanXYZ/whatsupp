@@ -8,25 +8,28 @@ import (
 	"whatsupp-backend/repository"
 	"whatsupp-backend/storage"
 	"whatsupp-backend/util"
+	"whatsupp-backend/websocket"
 
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
 type UserService struct {
+	hub            *websocket.Hub
 	validator      *validator.Validate
 	userRepository *repository.UserRepository
 }
 
-func NewUserService(validator *validator.Validate, userRepository *repository.UserRepository) *UserService {
+func NewUserService(validator *validator.Validate, userRepository *repository.UserRepository, hub *websocket.Hub) *UserService {
 	return &UserService{
+		hub:            hub,
 		userRepository: userRepository,
 		validator:      validator,
 	}
 }
 
 func (u *UserService) isUserExist(ctx context.Context, email string) bool {
-	err := u.userRepository.TakeByEmail(ctx, email, &entity.User{})
+	_, err := u.userRepository.TakeByEmail(ctx, email)
 	return !errors.Is(err, gorm.ErrRecordNotFound)
 }
 
@@ -36,9 +39,7 @@ func (u *UserService) HandleLogin(ctx context.Context, req *dto.LoginRequest) (*
 		return nil, err
 	}
 
-	user := new(entity.User)
-
-	err = u.userRepository.TakeByEmail(ctx, req.Email, user)
+	user, err := u.userRepository.TakeByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -77,20 +78,19 @@ func (u *UserService) HandleRegister(ctx context.Context, req *dto.RegisterReque
 
 }
 
-func (u *UserService) HandleUpdateUser(ctx context.Context, req *dto.UpdateUserRequest, claims *util.Claims) error {
+func (u *UserService) HandleUpdateUser(ctx context.Context, req *dto.UpdateUserRequest, claims *util.Claims) (*entity.User, error) {
 	err := u.validator.Struct(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if req.Email != claims.Email && u.isUserExist(ctx, req.Email) {
-		return errors.New("email has been used")
+		return nil, errors.New("email has been used")
 	}
 
-	user := new(entity.User)
-	err = u.userRepository.TakeByEmail(ctx, claims.Email, user)
+	user, err := u.userRepository.TakeByEmail(ctx, claims.Email)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	user.Email = req.Email
@@ -99,12 +99,19 @@ func (u *UserService) HandleUpdateUser(ctx context.Context, req *dto.UpdateUserR
 	if req.Password != "" {
 		pw, err := util.GenerateBcrypt(req.Password)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		user.Password = pw
 	}
 
-	return u.userRepository.Update(ctx, user)
+	err = u.userRepository.Update(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	u.hub.UpdateClient(user.ID, user)
+
+	return user, err
 }
 
 func (u *UserService) HandleMe(ctx context.Context, claims *util.Claims) (*entity.User, error) {

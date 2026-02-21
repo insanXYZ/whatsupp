@@ -19,24 +19,35 @@ export enum HttpMethod {
   GET = "GET",
 }
 
+export enum ContentType {
+  JSON = "application/json",
+  FORM = "multipart/form-data",
+}
+
 interface Mutate {
   url: string;
   body: any;
   method: HttpMethod;
+  contentType?: ContentType;
 }
 
-export function Mutation<T = any>(
-  mutationKey: any[],
-  useToast: boolean = false,
-) {
+export function Mutation(mutationKey: any[], useToast: boolean = false) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ url, body, method }: Mutate) => {
+    mutationFn: async ({
+      url,
+      body,
+      method,
+      contentType = ContentType.JSON,
+    }: Mutate) => {
       const res = await API({
         url: url,
         data: body,
         method: method,
+        headers: {
+          "Content-Type": contentType,
+        },
       });
 
       return res.data;

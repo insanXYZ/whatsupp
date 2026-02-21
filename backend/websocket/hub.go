@@ -50,6 +50,13 @@ func (h *Hub) GetClient(clientId int) *entity.User {
 	return client.User
 }
 
+func (h *Hub) UpdateClient(id int, user *entity.User) {
+	clients, ok := h.clients[id]
+	if ok {
+		clients.User = user
+	}
+}
+
 func (h *Hub) SendNewConversation(clientId int, data *dto.NewConversationResponse) error {
 	client, ok := h.clients[clientId]
 	if !ok {
