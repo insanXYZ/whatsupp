@@ -7,6 +7,7 @@ export interface RowConversationChat {
   bio: string;
   conversation_type: string;
   conversation_id?: number;
+  have_joined: boolean;
 }
 
 export const CONVERSATION_TYPE_PRIVATE = "PRIVATE";

@@ -40,6 +40,7 @@ export default function Page() {
     conversations,
     addConversation,
     addConversations,
+    deleteConversationsByConversationId,
     overwriteConversations,
   } = useConversations();
 
@@ -48,6 +49,7 @@ export default function Page() {
     SearchConversationsByNameIdb,
     GetAllConversationsIdb,
     ReplaceConversationsIdb,
+    DeleteConversationIdb,
     AppendConversationIdb,
   } = useIdb();
 
@@ -83,6 +85,21 @@ export default function Page() {
         console.log(error);
       }
     },
+    onLeaveConversation: async (data) => {
+      try {
+        await DeleteConversationIdb(data.conversation_id);
+
+        if (activeItem === NAV_TITLE_CHAT || activeItem === NAV_TITLE_GROUPS) {
+          deleteConversationsByConversationId(data.conversation_id);
+        }
+
+        if (activeChat?.conversation_id === data.conversation_id) {
+          setActiveChat(undefined);
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    },
   });
 
   const {
@@ -98,6 +115,11 @@ export default function Page() {
   } = Mutation(["getConversations"]);
 
   const {
+    isPending: isPendingMembershipGroupConversation,
+    mutate: mutateMembershipGroupConversation,
+  } = Mutation(["joinGroupConversation"], true);
+
+  const {
     data: dataGetRecentConversations,
     isSuccess: isSuccessGetRecentConversations,
   } = useQueryData(["getRecentConversations"], "/conversations/recent");
@@ -111,10 +133,18 @@ export default function Page() {
     send(req);
   };
 
+  const onSubmitMembershipGroupConversation = (v: RowConversationChat) => {
+    mutateMembershipGroupConversation({
+      body: null,
+      method: HttpMethod.PUT,
+      url: `/conversations/${v.conversation_id}/members/me_join`,
+    });
+  };
+
   const onClickConversationChat = (v: RowConversationChat) => {
     setActiveChat(v);
 
-    if (v.conversation_id) {
+    if (v.conversation_id && v.have_joined) {
       mutateGetMessages({
         body: null,
         method: HttpMethod.GET,
@@ -221,6 +251,10 @@ export default function Page() {
         content={
           activeChat && (
             <InsetChat
+              isPendingJoin={isPendingMembershipGroupConversation}
+              onSubmitMembershipGroupConversation={
+                onSubmitMembershipGroupConversation
+              }
               messages={
                 activeChat.conversation_id
                   ? messagesByChatKey[

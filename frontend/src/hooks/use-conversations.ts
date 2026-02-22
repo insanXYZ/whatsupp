@@ -20,11 +20,20 @@ export function useConversations() {
     setConversations(convs);
   };
 
+  const deleteConversationsByConversationId = (conversationId: number) => {
+    setConversations((conversations) =>
+      conversations.filter(
+        (conversation) => conversation.conversation_id != conversationId,
+      ),
+    );
+  };
+
   return {
     conversations,
     addConversation,
     addConversations,
     overwriteConversations,
+    deleteConversationsByConversationId,
     activeChat,
     setActiveChat,
     searchedConversations,

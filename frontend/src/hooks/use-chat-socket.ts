@@ -1,7 +1,9 @@
 import {
+  EVENT_LEAVE_CONVERSATION,
   EVENT_NEW_CONVERSATION,
   EVENT_NEW_MESSAGE,
   EventWs,
+  LeaveConversationResponse,
   NewConversationResponse,
   NewMessageResponse,
 } from "@/dto/ws-dto";
@@ -11,21 +13,25 @@ import { useEffect, useRef, useState } from "react";
 type useChatSocketProps = {
   onNewMessage: (data: NewMessageResponse) => void;
   onNewConversation: (data: NewConversationResponse) => void;
+  onLeaveConversation: (data: LeaveConversationResponse) => void;
 };
 
 export function useChatSocket({
   onNewMessage,
   onNewConversation,
+  onLeaveConversation,
 }: useChatSocketProps) {
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
 
   const onNewMessageRef = useRef(onNewMessage);
   const onNewConversationRef = useRef(onNewConversation);
+  const onLeaveConversationRef = useRef(onLeaveConversation);
 
   useEffect(() => {
     onNewMessageRef.current = onNewMessage;
     onNewConversationRef.current = onNewConversation;
+    onLeaveConversationRef.current = onLeaveConversation;
   });
 
   useEffect(() => {
@@ -43,6 +49,11 @@ export function useChatSocket({
 
           case EVENT_NEW_MESSAGE:
             onNewMessageRef.current(event.data as NewMessageResponse);
+            break;
+          case EVENT_LEAVE_CONVERSATION:
+            onLeaveConversationRef.current(
+              event.data as LeaveConversationResponse,
+            );
             break;
         }
       },

@@ -68,6 +68,13 @@ export const useIdb = () => {
     await Promise.all(convs.map((conv) => store?.put(conv)));
   };
 
+  const DeleteConversationIdb = async (conversationId: number) => {
+    const tx = idbRef.current?.transaction("conversations", "readwrite");
+    const store = tx?.objectStore("conversations");
+
+    await store?.delete(conversationId);
+  };
+
   useEffect(() => {
     ConnectIdb()
       .then((idb) => (idbRef.current = idb))
@@ -86,5 +93,6 @@ export const useIdb = () => {
     SearchConversationsByNameIdb,
     GetAllConversationsIdb,
     ReplaceConversationsIdb,
+    DeleteConversationIdb,
   };
 };

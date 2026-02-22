@@ -13,7 +13,7 @@ export const ConnectIdb = async () => {
     upgrade(database) {
       if (!database.objectStoreNames.contains("conversations")) {
         database.createObjectStore("conversations", {
-          keyPath: "id",
+          keyPath: "conversation_id",
         });
       }
 

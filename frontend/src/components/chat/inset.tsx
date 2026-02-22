@@ -6,6 +6,7 @@ import { Paperclip, Send } from "lucide-react";
 import { ButtonLoading } from "../ui/button-loading";
 import { SendMessageRequest } from "@/dto/ws-dto";
 import { RowConversationChat } from "@/dto/conversation-dto.ts";
+import { ItemGetMessageResponse } from "@/dto/message-dto";
 
 type AppSidebarInsetProps = {
   header?: ReactNode;
@@ -51,6 +52,8 @@ export const InsetHeaderConversationProfile = ({
 type InsetChatProps = {
   conversationDetail: RowConversationChat;
   messages: ItemGetMessageResponse[];
+  isPendingJoin: boolean;
+  onSubmitMembershipGroupConversation: (v: RowConversationChat) => any;
   onSubmit: (v: SendMessageRequest) => any;
 };
 
@@ -58,6 +61,8 @@ export const InsetChat = ({
   conversationDetail,
   messages,
   onSubmit,
+  isPendingJoin,
+  onSubmitMembershipGroupConversation,
 }: InsetChatProps) => {
   const [message, setMessage] = useState<string>("");
 
@@ -101,20 +106,33 @@ export const InsetChat = ({
         )}
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="absolute flex items-center gap-5 bottom-0 left-0 right-0 bg-background border-t p-4"
-      >
-        <Paperclip />
-        <input
-          onChange={(v) => setMessage(v.target.value)}
-          className="w-full rounded-md border px-3 py-2"
-          placeholder="Write message..."
-        />
-        <ButtonLoading className="p-5 " isPending={false}>
-          <Send />
-        </ButtonLoading>
-      </form>
+      {conversationDetail.have_joined ? (
+        <form
+          onSubmit={handleSubmit}
+          className="absolute flex items-center gap-5 bottom-0 left-0 right-0 bg-background border-t p-4"
+        >
+          <Paperclip />
+          <input
+            onChange={(v) => setMessage(v.target.value)}
+            className="w-full rounded-md border px-3 py-2"
+            placeholder="Write message..."
+          />
+          <ButtonLoading className="p-5 " isPending={false}>
+            <Send />
+          </ButtonLoading>
+        </form>
+      ) : (
+        <div className="absolute flex items-center gap-5 bottom-0 left-0 right-0 bg-background border-t p-4">
+          <ButtonLoading
+            isPending={isPendingJoin}
+            onClick={() =>
+              onSubmitMembershipGroupConversation(conversationDetail)
+            }
+          >
+            Join
+          </ButtonLoading>
+        </div>
+      )}
     </>
   );
 };
