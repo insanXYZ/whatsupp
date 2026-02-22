@@ -11,7 +11,8 @@ import {
   RenderRowsConversationChat,
 } from "@/components/chat/sidebar";
 import {
-  CreateGroupConversationRequest,
+  CONVERSATION_TYPE_GROUP,
+  CONVERSATION_TYPE_PRIVATE,
   RowConversationChat,
 } from "@/dto/conversation-dto.ts";
 import { GetMessageResponse } from "@/dto/message-dto";
@@ -20,7 +21,12 @@ import { useChatSocket } from "@/hooks/use-chat-socket";
 import { useConversations } from "@/hooks/use-conversations";
 import { useIdb } from "@/hooks/use-idb";
 import { useMessages } from "@/hooks/use-messages";
-import { NAV_TITLE_CHAT, NAV_TITLE_SEARCH } from "@/navigation/navigation";
+import {
+  NAV_TITLE_CHAT,
+  NAV_TITLE_CONTACTS,
+  NAV_TITLE_GROUPS,
+  NAV_TITLE_SEARCH,
+} from "@/navigation/navigation";
 import { HttpMethod, Mutation, useQueryData } from "@/utils/tanstack";
 import { useEffect, useState } from "react";
 
@@ -63,20 +69,21 @@ export default function Page() {
           }
         }
 
-        if (activeItem === NAV_TITLE_CHAT) {
-          addConversation(data);
+        switch (activeItem) {
+          case NAV_TITLE_CHAT:
+            addConversation(data);
+            break;
+          case NAV_TITLE_GROUPS:
+            if (data.conversation_type === CONVERSATION_TYPE_GROUP) {
+              addConversation(data);
+            }
+            break;
         }
       } catch (error) {
         console.log(error);
       }
     },
   });
-
-  const {
-    mutate: mutateCreateGroupConversation,
-    isSuccess: isSuccessCreateGroupConversation,
-    data: dataCreateGroupConversation,
-  } = Mutation(["getMessages"]);
 
   const {
     mutate: mutateGetMessages,
@@ -103,10 +110,6 @@ export default function Page() {
 
     send(req);
   };
-
-  const handleCreateConversationGroup = (
-    v: CreateGroupConversationRequest,
-  ) => { };
 
   const onClickConversationChat = (v: RowConversationChat) => {
     setActiveChat(v);

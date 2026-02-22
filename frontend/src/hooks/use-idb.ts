@@ -49,6 +49,11 @@ export const useIdb = () => {
     return res;
   };
 
+  const SearchGroupConversationsByNameIdb = async (name: string) => {
+    const tx = idbRef.current?.transaction("conversations");
+    const store = tx?.objectStore("conversations");
+  };
+
   const GetAllConversationsIdb = async () => {
     const conversations = await idbRef.current?.getAll("conversations");
     return conversations ? conversations : [];

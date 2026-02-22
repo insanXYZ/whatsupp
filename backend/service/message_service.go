@@ -252,6 +252,7 @@ func (ms *MessageService) handleIncomingMessage(
 				Bio:              bc.Sender.Bio,
 				ConversationType: entity.CONV_TYPE_PRIVATE,
 				ConversationID:   &conversationId,
+				HaveJoined:       true,
 			})
 			if err != nil {
 				return err
@@ -273,6 +274,7 @@ func (ms *MessageService) handleIncomingMessage(
 				Bio:              receiver.Bio,
 				ConversationType: entity.CONV_TYPE_PRIVATE,
 				ConversationID:   &conversationId,
+				HaveJoined:       true,
 			})
 
 			if err != nil {

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -51,9 +52,12 @@ func (cs *ConversationService) HandleCreateGroupConversation(ctx context.Context
 		return nil, err
 	}
 
-	err = sage.Validate(req.Image)
-	if err != nil {
-		return nil, err
+	if req.Image != nil {
+		err = sage.Validate(req.Image)
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	var newConversation *entity.Conversation
@@ -72,7 +76,13 @@ func (cs *ConversationService) HandleCreateGroupConversation(ctx context.Context
 
 			defer file.Close()
 
-			_, err = cs.storage.UploadFile(storage.CONVERSATION_PROFILE_BUCKET, filename, file)
+			contentType := req.Image.Header.Get("Content-Type")
+
+			fileOption := storage_go.FileOptions{
+				ContentType: &contentType,
+			}
+
+			_, err = cs.storage.UploadFile(storage.CONVERSATION_PROFILE_BUCKET, filename, file, fileOption)
 			if err != nil {
 				return err
 			}
@@ -107,7 +117,10 @@ func (cs *ConversationService) HandleCreateGroupConversation(ctx context.Context
 			Bio:              newConversation.Bio,
 			ConversationType: newConversation.ConversationType,
 			ConversationID:   &newConversation.ID,
+			HaveJoined:       true,
 		}
+
+		cs.hub.CreateConversation(newConversation.ID, []int{claims.Sub})
 
 		err = cs.hub.SendNewConversation(claims.Sub, newConversationResponse)
 		if err != nil {
@@ -122,5 +135,47 @@ func (cs *ConversationService) HandleCreateGroupConversation(ctx context.Context
 	}
 
 	return newConversation, err
+
+}
+
+func (cs *ConversationService) HandleJoinGroupConversation(ctx context.Context, req *dto.JoinGroupConversationRequest, claims *util.Claims) (bool, error) {
+
+	isJoin := true
+
+	err := cs.conversationRepository.Transaction(ctx, func(tx *gorm.DB) error {
+
+		conversationTx := cs.conversationRepository.WithTx(tx)
+		memberTx := cs.memberRepsitory.WithTx(tx)
+
+		conversation, err := conversationTx.TakeById(ctx, req.ConversationID)
+		if err != nil {
+			return err
+		}
+
+		conversationWithMember, err := conversationTx.TakeGroupConversationByUserAndConversationId(ctx, claims.Sub, conversation.ID)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		// not found, append it
+		if err != nil {
+			isJoin = true
+
+			newMember := &entity.Member{
+				UserID:         claims.Sub,
+				Role:           entity.MEMBER_TYPE_MEMBER,
+				ConversationID: conversation.ID,
+			}
+
+			err = memberTx.Create(ctx, newMember)
+		} else {
+			isJoin = false
+			err = memberTx.DeleteById(ctx, conversationWithMember.Members[0].ID)
+		}
+
+		return err
+	})
+
+	return isJoin, err
 
 }

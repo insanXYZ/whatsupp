@@ -26,7 +26,8 @@ type SearchConversationResponse struct {
 	Image            string `json:"image,omitempty"`
 	Bio              string `json:"bio,omitempty"`
 	ConversationType string `json:"conversation_type,omitempty"`
-	ConversationID   *int   `json:"conversation_id"`
+	ConversationID   *int   `json:"conversation_id,omitempty"`
+	HaveJoined       bool   `json:"have_joined"`
 }
 
 type LoadRecentConversation = SearchConversationResponse
@@ -37,4 +38,8 @@ type CreateGroupConversationRequest struct {
 	Name  string                `form:"name" validate:"required,min=3,max=25"`
 	Bio   string                `form:"bio" `
 	Image *multipart.FileHeader `validate:"-"`
+}
+
+type JoinGroupConversationRequest struct {
+	ConversationID int `param:"conversationId"`
 }

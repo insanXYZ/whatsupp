@@ -51,7 +51,8 @@ func (cr *ConversationRepository) SearchConversationWithNameAndUserId(
 					AND m1.user_id = ?
 					AND m2.user_id = u.id
 					LIMIT 1
-				) as conversation_id 
+				) AS conversation_id ,
+				true as have_joined
 				FROM users u
 				WHERE u.name ILIKE ?
 				AND u.id != ?
@@ -64,8 +65,13 @@ func (cr *ConversationRepository) SearchConversationWithNameAndUserId(
             c.name,
             c.image,
             c.bio,
-            c.id AS conversation_id
+            c.id AS conversation_id,
+						CASE
+							WHEN m.id IS NOT NULL THEN true
+							ELSE false
+						END AS have_joined
         FROM conversations c
+				LEFT JOIN members m on m.conversation_id = c.id AND m.user_id = ?
         WHERE c.type = 'GROUP'
         AND c.name ILIKE ?
     `
@@ -74,7 +80,7 @@ func (cr *ConversationRepository) SearchConversationWithNameAndUserId(
 
 	err := cr.db.
 		WithContext(ctx).
-		Raw(query, userId, searchPattern, userId, searchPattern).
+		Raw(query, userId, searchPattern, userId, userId, searchPattern).
 		Scan(&results).Error
 
 	if err != nil {
@@ -128,7 +134,7 @@ func (cr *ConversationRepository) TakeConversationByUserAndConversationId(ctx co
 func (cr *ConversationRepository) TakeGroupConversationByUserAndConversationId(ctx context.Context, userId, conversationId int) (*entity.Conversation, error) {
 	conversation := new(entity.Conversation)
 
-	cr.db.WithContext(ctx).Joins("JOIN members ON members.conversation_id = conversations.id AND members.user_id = ?", userId).Take(conversation, "conversations.id = ?", conversationId)
+	cr.db.WithContext(ctx).Joins("JOIN members ON members.conversation_id = conversations.id AND members.user_id = ?", userId).Preload("Members").Take(conversation, "conversations.id = ?", conversationId)
 
 	return conversation, nil
 }
@@ -145,7 +151,8 @@ func (cr *ConversationRepository) FindConversationsByUserId(
             COALESCE(u.image, c.image) AS image,
             COALESCE(u.bio, c.bio) AS bio,
             c.type AS conversation_type,
-            c.id AS conversation_id
+            c.id AS conversation_id,
+						true AS have_joined
 
         FROM conversations c
         JOIN members me 

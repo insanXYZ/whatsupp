@@ -9,6 +9,9 @@ export interface RowConversationChat {
   conversation_id?: number;
 }
 
+export const CONVERSATION_TYPE_PRIVATE = "PRIVATE";
+export const CONVERSATION_TYPE_GROUP = "GROUP";
+
 export type SearchConversationResponse = RowConversationChat;
 
 export type RecentConversationsResponse = RowConversationChat;
@@ -21,5 +24,5 @@ export interface CreateGroupConversationRequest {
 export const CreateGroupConversationDto = z.object({
   image: z.file().mime(["image/png", "image/jpeg"]).optional(),
   name: z.string().min(3).max(25),
-  bio: z.string(),
+  bio: z.string().optional(),
 });

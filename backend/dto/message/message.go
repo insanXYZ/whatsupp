@@ -11,6 +11,8 @@ const (
 	SUCCESS_LIST_RECENT_CONVERSATION  = "Recent conversation retrieved successfully."
 	SUCCESS_GET_MESSAGES              = "Messages retrieved successfully."
 	SUCCESS_CREATE_GROUP_CONVERSATION = "Create group conversation successfully."
+	SUCCESS_JOIN_GROUP                = "Join group successfully."
+	SUCCESS_LEAVE_GROUP               = "Leave group successfully."
 
 	ERR_BIND_REQ                  = "Invalid request payload."
 	ERR_GET_ME                    = "Failed to retrieve user profile."
@@ -22,8 +24,10 @@ const (
 	ERR_SEND_FILES                = "Failed to send files."
 	ERR_LOGOUT                    = "Failed to logout."
 	ERR_LIST_RECENT_CONVERSATION  = "Failed to retrieve recent conversation."
-	ERR_GET_MESSAGES              = "Failed to retrieve messages"
+	ERR_GET_MESSAGES              = "Failed to retrieve messages."
 	ERR_CREATE_GROUP_CONVERSATION = "Failed to create group conversation."
+	ERR_JOIN_GROUP                = "Failed to join group."
+	ERR_LEAVE_GROUP               = "Failed to leave group."
 
 	WS_SUCCESS_SYNC_CHAT = "Chat synchronized successfully."
 	WS_ERR_SYNC_CHAT     = "Failed to synchronize chat."

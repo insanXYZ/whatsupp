@@ -36,7 +36,12 @@ import {
 } from "@/navigation/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { useDebounce } from "use-debounce";
-import { HttpMethod, Mutation, useQueryData } from "@/utils/tanstack";
+import {
+  ContentType,
+  HttpMethod,
+  Mutation,
+  useQueryData,
+} from "@/utils/tanstack";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import {
   DropdownMenu,
@@ -221,6 +226,13 @@ const SidebarDetail = ({
   );
 };
 
+interface CropImageDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  tempImage: string | undefined;
+  onCropComplete: (file: File, previewUrl: string) => void;
+}
+
 const getCroppedImg = async (
   image: HTMLImageElement,
   crop: Crop,
@@ -256,38 +268,119 @@ const getCroppedImg = async (
   });
 };
 
+const CropImageDialog = ({
+  open,
+  onOpenChange,
+  tempImage,
+  onCropComplete,
+}: CropImageDialogProps) => {
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<Crop>();
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Crop Image</DialogTitle>
+        </DialogHeader>
+
+        {tempImage && (
+          <ReactCrop
+            crop={crop}
+            onChange={(c) => setCrop(c)}
+            onComplete={(c) => setCompletedCrop(c)}
+            aspect={1}
+            minWidth={100}
+          >
+            <img
+              ref={imgRef}
+              src={tempImage}
+              alt="Crop"
+              style={{ maxHeight: 400 }}
+              onLoad={(e) => {
+                const { width, height } = e.currentTarget;
+                const crop = makeAspectCrop(
+                  { unit: "%", width: 90 },
+                  1,
+                  width,
+                  height,
+                );
+                setCrop(centerCrop(crop, width, height));
+              }}
+            />
+          </ReactCrop>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+
+          <Button
+            onClick={async () => {
+              if (!imgRef.current || !completedCrop) return;
+
+              const croppedFile = await getCroppedImg(
+                imgRef.current,
+                completedCrop,
+                "group.jpg",
+              );
+
+              const previewUrl = URL.createObjectURL(croppedFile);
+              onCropComplete(croppedFile, previewUrl);
+              onOpenChange(false);
+            }}
+          >
+            OK
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const FormDialogNewGroup = () => {
-  const { mutate, isPending } = Mutation(["createGroup"], true);
+  const { mutate, isPending, isSuccess } = Mutation(["createGroup"], true);
 
   const [imageSrc, setImageSrc] = useState<string>();
   const [tempImage, setTempImage] = useState<string>();
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
-
-  const [crop, setCrop] = useState<Crop>();
-  const [completedCrop, setCompletedCrop] = useState<Crop>();
-
-  const imgRef = useRef<HTMLImageElement | null>(null);
-
-  const defaultValues: z.infer<typeof CreateGroupConversationDto> = {
-    image: undefined,
-    name: "",
-    bio: "",
-  };
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
 
   const form = useForm<z.infer<typeof CreateGroupConversationDto>>({
-    defaultValues,
+    defaultValues: {
+      image: undefined,
+      name: "",
+      bio: undefined,
+    },
     resolver: zodResolver(CreateGroupConversationDto),
   });
 
   const onSubmit = (data: z.infer<typeof CreateGroupConversationDto>) => {
+    const formData = new FormData();
+    if (data.image) {
+      formData.append("image", data.image!);
+    }
+    if (data.bio) {
+      formData.append("bio", data.bio!);
+    }
+    formData.append("name", data.name);
+
     mutate({
-      body: data,
+      body: formData,
       method: HttpMethod.POST,
       url: "/conversations",
+      contentType: ContentType.FORM,
     });
   };
 
-  // cleanup blob url
+  useEffect(() => {
+    if (isSuccess) {
+      setFormDialogOpen(false);
+    }
+  }, [isSuccess]);
+
   useEffect(() => {
     return () => {
       if (imageSrc) URL.revokeObjectURL(imageSrc);
@@ -297,20 +390,20 @@ const FormDialogNewGroup = () => {
 
   return (
     <>
-      <Dialog>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DialogTrigger asChild>
-                <MessageSquarePlus className="cursor-pointer" />
-              </DialogTrigger>
-            </TooltipTrigger>
-            <TooltipContent side={"bottom"}>
-              <p>New Group</p>
-            </TooltipContent>
-          </Tooltip>
+      <Dialog open={formDialogOpen} onOpenChange={setFormDialogOpen}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <MessageSquarePlus className="cursor-pointer" />
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent side={"bottom"}>
+            <p>New Group</p>
+          </TooltipContent>
+        </Tooltip>
 
-          <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm">
+          <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>Create Group</DialogTitle>
             </DialogHeader>
@@ -331,7 +424,7 @@ const FormDialogNewGroup = () => {
                         ) : (
                           <Camera
                             width={70}
-                            className="bg-secondary p-4 rounded-full  text-white"
+                            className="bg-secondary p-4 rounded-full cursor-pointer text-white"
                             height={70}
                           />
                         )}
@@ -351,8 +444,6 @@ const FormDialogNewGroup = () => {
                         if (!file) return;
 
                         const url = URL.createObjectURL(file);
-
-                        // buka crop dialog
                         setTempImage(url);
                         setCropDialogOpen(true);
                       }}
@@ -369,7 +460,7 @@ const FormDialogNewGroup = () => {
                 render={({ field, fieldState }) => (
                   <Field>
                     <FieldLabel htmlFor="name">Name</FieldLabel>
-                    <Input {...field} id="name" required />
+                    <Input {...field} id="name" />
                     <FieldError errors={[fieldState.error]} />
                   </Field>
                 )}
@@ -381,208 +472,40 @@ const FormDialogNewGroup = () => {
                 render={({ field, fieldState }) => (
                   <Field>
                     <FieldLabel htmlFor="bio">Bio</FieldLabel>
-                    <Input {...field} id="bio" required />
+                    <Input {...field} id="bio" />
                     <FieldError errors={[fieldState.error]} />
                   </Field>
                 )}
               />
+
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline" type="button">
+                    Cancel
+                  </Button>
+                </DialogClose>
+
+                <ButtonLoading type="submit" isPending={isPending}>
+                  Create
+                </ButtonLoading>
+              </DialogFooter>
             </FieldGroup>
-
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
-
-              <ButtonLoading isPending={isPending}>Create</ButtonLoading>
-            </DialogFooter>
-          </DialogContent>
-        </form>
-      </Dialog>
-
-      <Dialog open={cropDialogOpen} onOpenChange={setCropDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Crop Image</DialogTitle>
-          </DialogHeader>
-
-          {tempImage && (
-            <ReactCrop
-              crop={crop}
-              onChange={(c) => setCrop(c)}
-              onComplete={(c) => setCompletedCrop(c)}
-              aspect={1}
-              minWidth={100}
-            >
-              <img
-                ref={imgRef}
-                src={tempImage}
-                alt="Crop"
-                style={{ maxHeight: 400 }}
-                onLoad={(e) => {
-                  const { width, height } = e.currentTarget;
-
-                  const crop = makeAspectCrop(
-                    { unit: "%", width: 90 },
-                    1,
-                    width,
-                    height,
-                  );
-
-                  setCrop(centerCrop(crop, width, height));
-                }}
-              />
-            </ReactCrop>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCropDialogOpen(false)}>
-              Cancel
-            </Button>
-
-            <Button
-              onClick={async () => {
-                if (!imgRef.current || !completedCrop) return;
-
-                const croppedFile = await getCroppedImg(
-                  imgRef.current,
-                  completedCrop,
-                  "group.jpg",
-                );
-
-                const previewUrl = URL.createObjectURL(croppedFile);
-
-                form.setValue("image", croppedFile);
-                setImageSrc(previewUrl);
-
-                setCropDialogOpen(false);
-              }}
-            >
-              OK
-            </Button>
-          </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
+
+      <CropImageDialog
+        open={cropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        tempImage={tempImage}
+        onCropComplete={(file, previewUrl) => {
+          form.setValue("image", file);
+          setImageSrc(previewUrl);
+        }}
+      />
     </>
   );
 };
-
-// const FormDialogNewGroup = () => {
-//   const { mutate, isPending } = Mutation(["createGroup"], true);
-//   const [imageSrc, setImageSrc] = useState<string | undefined>(undefined);
-//
-//   const defaultValues: z.infer<typeof CreateGroupConversationDto> = {
-//     image: undefined,
-//     name: "",
-//     bio: "",
-//   };
-//
-//   const form = useForm<z.infer<typeof CreateGroupConversationDto>>({
-//     defaultValues,
-//     resolver: zodResolver(CreateGroupConversationDto),
-//   });
-//
-//   const onSubmit = (data: z.infer<typeof CreateGroupConversationDto>) => {
-//     mutate({
-//       body: data,
-//       method: HttpMethod.POST,
-//       url: "/conversations",
-//     });
-//   };
-//
-//   return (
-//     <Dialog>
-//       <form onSubmit={form.handleSubmit(onSubmit)}>
-//         <Tooltip>
-//           <TooltipTrigger asChild>
-//             <DialogTrigger asChild>
-//               <MessageSquarePlus className="cursor-pointer" />
-//             </DialogTrigger>
-//           </TooltipTrigger>
-//           <TooltipContent side={"bottom"}>
-//             <p>New Group</p>
-//           </TooltipContent>
-//         </Tooltip>
-//         {/* </DialogTrigger> */}
-//         <DialogContent className="sm:max-w-sm">
-//           <DialogHeader>
-//             <DialogTitle>Create Group</DialogTitle>
-//           </DialogHeader>
-//           <FieldGroup>
-//             <Controller
-//               control={form.control}
-//               name="image"
-//               render={({
-//                 field: { ref, name, onBlur, onChange },
-//                 fieldState,
-//               }) => (
-//                 <Field>
-//                   <FieldLabel htmlFor="image">
-//                     {imageSrc ? (
-//                       <Image
-//                         src={imageSrc}
-//                         width={100}
-//                         height={100}
-//                         alt="image anu"
-//                       />
-//                     ) : (
-//                       <Camera />
-//                     )}
-//                   </FieldLabel>
-//                   <Input
-//                     name={name}
-//                     onBlur={onBlur}
-//                     ref={ref}
-//                     onChange={(e) => {
-//                       const file = e.target.files?.[0];
-//                       if (file) {
-//                         onChange(file);
-//                         const url = URL.createObjectURL(file);
-//                         setImageSrc(url);
-//                       }
-//                     }}
-//                     id="image"
-//                     type="file"
-//                     accept="image/*"
-//                   />
-//                   <FieldError errors={[fieldState.error]} />
-//                 </Field>
-//               )}
-//             />
-//             <Controller
-//               control={form.control}
-//               name="name"
-//               render={({ field, fieldState }) => (
-//                 <Field>
-//                   <FieldLabel htmlFor="name">Name</FieldLabel>
-//                   <Input {...field} id="name" type="text" required />
-//                   <FieldError errors={[fieldState.error]} />
-//                 </Field>
-//               )}
-//             />
-//             <Controller
-//               control={form.control}
-//               name="bio"
-//               render={({ field, fieldState }) => (
-//                 <Field>
-//                   <FieldLabel htmlFor="bio">Bio</FieldLabel>
-//                   <Input {...field} id="bio" type="text" required />
-//                   <FieldError errors={[fieldState.error]} />
-//                 </Field>
-//               )}
-//             />
-//           </FieldGroup>
-//           <DialogFooter>
-//             <DialogClose asChild>
-//               <Button variant="outline">Cancel</Button>
-//             </DialogClose>
-//             <ButtonLoading isPending={isPending}>Create</ButtonLoading>
-//             <Button type="submit">Save changes</Button>
-//           </DialogFooter>
-//         </DialogContent>
-//       </form>
-//     </Dialog>
-//   );
-// };
 
 type RenderRowsConversationChatProps = {
   conversations: RowConversationChat[];

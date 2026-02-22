@@ -8,9 +8,6 @@ export const EVENT_SEND_MESSAGE: eventWsString = "SEND_MESSAGE";
 export const EVENT_NEW_MESSAGE: eventWsString = "NEW_MESSAGE";
 export const EVENT_NEW_CONVERSATION: eventWsString = "NEW_CONVERSATION";
 
-export const TARGET_USER: typeTargetSend = "USER";
-export const TARGET_GROUP: typeTargetSend = "GROUP";
-
 export interface EventWs {
   event: eventWsString;
   data: any;

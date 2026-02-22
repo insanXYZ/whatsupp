@@ -36,6 +36,7 @@ func SetRoute(cfg *RouteConfig) {
 	conversation.GET("/recent", cfg.conversationController.LoadRecentConversations)
 	conversation.GET("", cfg.conversationController.Lists)
 	conversation.POST("", cfg.conversationController.CreateGroupConversation)
+	conversation.PUT("/:conversationId/members/me_join", cfg.conversationController.JoinGroupConversation)
 
 	chat := hasJwtRoute.Group("/messages")
 	chat.POST("/attachments", cfg.messageController.UploadFileAttachments)

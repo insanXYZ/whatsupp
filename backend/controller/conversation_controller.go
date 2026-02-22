@@ -71,3 +71,31 @@ func (cc *ConversationController) CreateGroupConversation(c *echo.Context) error
 	return util.ResponseOk(c, message.SUCCESS_CREATE_GROUP_CONVERSATION, converter.ConversationEntityToDto(newConversation))
 
 }
+
+func (cc *ConversationController) JoinGroupConversation(c *echo.Context) error {
+	ctx := c.Request().Context()
+	claims := util.GetClaims(c)
+	req := new(dto.JoinGroupConversationRequest)
+	err := c.Bind(req)
+	if err != nil {
+		return util.ResponseErr(c, message.ERR_BIND_REQ, err)
+	}
+
+	isJoin, err := cc.conversationService.HandleJoinGroupConversation(ctx, req, claims)
+	if err != nil {
+		errMessage := message.ERR_JOIN_GROUP
+		if !isJoin {
+			errMessage = message.ERR_LEAVE_GROUP
+		}
+
+		return util.ResponseErr(c, errMessage, err)
+	}
+
+	successMessage := message.SUCCESS_JOIN_GROUP
+	if !isJoin {
+		successMessage = message.SUCCESS_LEAVE_GROUP
+	}
+
+	return util.ResponseOk(c, successMessage, nil)
+
+}

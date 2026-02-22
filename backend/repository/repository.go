@@ -34,3 +34,8 @@ func (r *repository[T]) TakeById(ctx context.Context, id any) (T, error) {
 func (r *repository[T]) Transaction(ctx context.Context, f func(tx *gorm.DB) error, opts ...*sql.TxOptions) error {
 	return r.db.WithContext(ctx).Transaction(f, opts...)
 }
+
+func (r *repository[T]) DeleteById(ctx context.Context, id int) error {
+	var model T
+	return r.db.WithContext(ctx).Delete(&model, id).Error
+}
