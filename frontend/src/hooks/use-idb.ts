@@ -1,4 +1,8 @@
-import { RowConversationChat } from "@/dto/conversation-dto.ts";
+import {
+  CONVERSATION_TYPE_GROUP,
+  CONVERSATION_TYPE_PRIVATE,
+  RowConversationChat,
+} from "@/dto/conversation-dto.ts";
 import { ConnectIdb, WhatsuppIdbSchema } from "@/utils/indexdb";
 import { ToastError } from "@/utils/toast";
 import { IDBPDatabase } from "idb";
@@ -52,13 +56,49 @@ export const useIdb = () => {
   const SearchGroupConversationsByNameIdb = async (name: string) => {
     const tx = idbRef.current?.transaction("conversations");
     const store = tx?.objectStore("conversations");
+    let cursor = await store?.openCursor();
+
+    const res: RowConversationChat[] = [];
+
+    while (cursor) {
+      const conversation = cursor.value;
+      if (
+        conversation.conversation_type === CONVERSATION_TYPE_GROUP &&
+        (name ? conversation.name.toLowerCase().includes(name) : true)
+      ) {
+        res.push(conversation);
+      }
+      cursor = await cursor.continue();
+    }
+
+    return res;
+  };
+
+  const SearchPrivateConversationsByNameIdb = async (name: string) => {
+    const tx = idbRef.current?.transaction("conversations");
+    const store = tx?.objectStore("conversations");
+    let cursor = await store?.openCursor();
+
+    const res: RowConversationChat[] = [];
+
+    while (cursor) {
+      const conversation = cursor.value;
+      if (
+        conversation.conversation_type === CONVERSATION_TYPE_PRIVATE &&
+        (name ? conversation.name.toLowerCase().includes(name) : true)
+      ) {
+        res.push(conversation);
+      }
+      cursor = await cursor.continue();
+    }
+
+    return res;
   };
 
   const GetAllConversationsIdb = async () => {
     const conversations = await idbRef.current?.getAll("conversations");
     return conversations ? conversations : [];
   };
-
   const ReplaceConversationsIdb = async (convs: RowConversationChat[]) => {
     const tx = idbRef.current?.transaction("conversations", "readwrite");
     const store = tx?.objectStore("conversations");
@@ -91,6 +131,8 @@ export const useIdb = () => {
     AppendConversationsIdb,
     AppendConversationIdb,
     SearchConversationsByNameIdb,
+    SearchGroupConversationsByNameIdb,
+    SearchPrivateConversationsByNameIdb,
     GetAllConversationsIdb,
     ReplaceConversationsIdb,
     DeleteConversationIdb,

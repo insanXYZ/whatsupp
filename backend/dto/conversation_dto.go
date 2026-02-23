@@ -40,6 +40,14 @@ type CreateGroupConversationRequest struct {
 	Image *multipart.FileHeader `validate:"-"`
 }
 
+type ListMembersConversationRequest struct {
+	ConversationID int `param:"conversationId"`
+}
+
 type JoinGroupConversationRequest struct {
 	ConversationID int `param:"conversationId"`
+}
+
+type LeaveConversationResponse struct {
+	ConversationID int `json:"conversation_id,omitempty"`
 }

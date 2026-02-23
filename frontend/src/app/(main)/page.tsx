@@ -39,15 +39,15 @@ export default function Page() {
     setActiveChat,
     conversations,
     addConversation,
-    addConversations,
     deleteConversationsByConversationId,
     overwriteConversations,
   } = useConversations();
 
   const {
-    AppendConversationsIdb,
     SearchConversationsByNameIdb,
     GetAllConversationsIdb,
+    SearchGroupConversationsByNameIdb,
+    SearchPrivateConversationsByNameIdb,
     ReplaceConversationsIdb,
     DeleteConversationIdb,
     AppendConversationIdb,
@@ -61,8 +61,11 @@ export default function Page() {
     onNewConversation: async (data) => {
       try {
         AppendConversationIdb(data);
+        console.log("activeItem:", activeItem);
+        console.log("activeChat:", activeChat);
+        console.log("data:", data);
 
-        if (activeItem === NAV_TITLE_SEARCH && !activeChat?.conversation_id) {
+        if (activeItem === NAV_TITLE_SEARCH) {
           if (
             activeChat?.id === data.id &&
             activeChat.conversation_type === data.conversation_type
@@ -142,6 +145,7 @@ export default function Page() {
   };
 
   const onClickConversationChat = (v: RowConversationChat) => {
+    console.log("onClickConversationChat");
     setActiveChat(v);
 
     if (v.conversation_id && v.have_joined) {
@@ -169,6 +173,15 @@ export default function Page() {
             });
           }
           break;
+        case NAV_TITLE_GROUPS:
+          const groupConversations = await SearchGroupConversationsByNameIdb(v);
+          overwriteConversations(groupConversations);
+          break;
+        case NAV_TITLE_CONTACTS:
+          const privateConversations =
+            await SearchPrivateConversationsByNameIdb(v);
+          overwriteConversations(privateConversations);
+          break;
       }
     } catch (error) {
       console.log(error);
@@ -176,16 +189,26 @@ export default function Page() {
   };
 
   const onChangeActiveItem = async (v: string) => {
+    if (v === activeItem) return;
     setActiveItem(v);
-
+    overwriteConversations([]);
     try {
       switch (v) {
         case NAV_TITLE_SEARCH:
-          overwriteConversations([]);
           break;
         case NAV_TITLE_CHAT:
           const allConversations = await GetAllConversationsIdb();
           overwriteConversations(allConversations);
+          break;
+        case NAV_TITLE_GROUPS:
+          const groupConversations =
+            await SearchGroupConversationsByNameIdb("");
+          overwriteConversations(groupConversations);
+          break;
+        case NAV_TITLE_CONTACTS:
+          const privateConversations =
+            await SearchPrivateConversationsByNameIdb("");
+          overwriteConversations(privateConversations);
           break;
       }
     } catch (error) {
@@ -242,10 +265,7 @@ export default function Page() {
       <AppSidebarInset
         header={
           activeChat && (
-            <InsetHeaderConversationProfile
-              image={activeChat.image}
-              name={activeChat.name}
-            />
+            <InsetHeaderConversationProfile conversation={activeChat} />
           )
         }
         content={

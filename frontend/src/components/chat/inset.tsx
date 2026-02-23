@@ -7,6 +7,14 @@ import { ButtonLoading } from "../ui/button-loading";
 import { SendMessageRequest } from "@/dto/ws-dto";
 import { RowConversationChat } from "@/dto/conversation-dto.ts";
 import { ItemGetMessageResponse } from "@/dto/message-dto";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
 
 type AppSidebarInsetProps = {
   header?: ReactNode;
@@ -30,22 +38,38 @@ export const AppSidebarInset = ({ header, content }: AppSidebarInsetProps) => {
 };
 
 type InsetHeaderConversationProps = {
-  image: string;
-  name: string;
+  conversation: RowConversationChat;
 };
 
 export const InsetHeaderConversationProfile = ({
-  image,
-  name,
+  conversation,
 }: InsetHeaderConversationProps) => {
   return (
-    <div className="flex gap-5 items-center">
-      <Avatar className="h-7 w-7 rounded-lg">
-        <AvatarImage src={image} alt={name} className="bg-gray-profile" />
-        <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-      </Avatar>
-      <div>{name}</div>
-    </div>
+    <Dialog>
+      <DialogTrigger asChild>
+        <div className="w-full cursor-pointer flex items-center ">
+          <div className="flex gap-5 items-center">
+            <Avatar className="h-7 w-7 rounded-lg">
+              <AvatarImage
+                src={conversation.image}
+                alt={conversation.name}
+                className="bg-gray-profile"
+              />
+              <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+            </Avatar>
+            <div>{conversation.name}</div>
+          </div>
+        </div>
+      </DialogTrigger>
+      <DialogContent showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>
+            Detail {conversation.conversation_type.toLowerCase()}
+          </DialogTitle>
+          <DialogDescription></DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -124,6 +148,7 @@ export const InsetChat = ({
       ) : (
         <div className="absolute flex items-center gap-5 bottom-0 left-0 right-0 bg-background border-t p-4">
           <ButtonLoading
+            className="w-full"
             isPending={isPendingJoin}
             onClick={() =>
               onSubmitMembershipGroupConversation(conversationDetail)

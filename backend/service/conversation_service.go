@@ -157,7 +157,6 @@ func (cs *ConversationService) HandleJoinGroupConversation(ctx context.Context, 
 			return err
 		}
 
-		// not found, append it
 		if err != nil {
 			isJoin = true
 
@@ -173,9 +172,53 @@ func (cs *ConversationService) HandleJoinGroupConversation(ctx context.Context, 
 			err = memberTx.DeleteById(ctx, conversationWithMember.Members[0].ID)
 		}
 
+		if err != nil {
+			return err
+		}
+
+		if isJoin {
+			newConversationResponse := &dto.NewConversationResponse{
+				ID:               conversation.ID,
+				Name:             conversation.Name,
+				Image:            conversation.Image,
+				Bio:              conversation.Bio,
+				ConversationID:   &conversation.ID,
+				ConversationType: conversation.ConversationType,
+				HaveJoined:       true,
+			}
+			err = cs.hub.SendNewConversation(claims.Sub, newConversationResponse)
+		} else {
+			leaveConversationResponse := &dto.LeaveConversationResponse{
+				ConversationID: conversation.ID,
+			}
+
+			err = cs.hub.SendLeaveConversation(claims.Sub, leaveConversationResponse)
+		}
+
+		if !cs.hub.IsExistConversation(conversation.ID) {
+			memberIds, err := memberTx.GetUserIdsWithConversationId(ctx, conversation.ID)
+			if err != nil {
+				return err
+			}
+
+			cs.hub.CreateConversation(conversation.ID, memberIds)
+		} else {
+			cs.hub.DeleteClientConversation(conversation.ID, claims.Sub)
+		}
+
 		return err
 	})
 
 	return isJoin, err
+
+}
+
+func (cs *ConversationService) HandleListMembersConversation(ctx context.Context, req *dto.ListMembersConversationRequest, claims *util.Claims) ([]*entity.Member, error) {
+	conversation, err := cs.conversationRepository.TakeConversationByConversationAndUserId(ctx, req.ConversationID, claims.Sub)
+	if err != nil {
+		return nil, err
+	}
+
+	return cs.memberRepsitory.FindMembersWithConversationId(ctx, conversation.ID)
 
 }

@@ -68,6 +68,7 @@ import { ButtonLoading } from "../ui/button-loading";
 import Image from "next/image";
 import ReactCrop, { Crop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
+import { DeleteDbIdb } from "@/utils/indexdb";
 
 type AppSidebarProps = {
   contentSidebarDetail?: ReactNode;
@@ -82,11 +83,15 @@ export const AppSidebar = ({
   activeItem,
   onSearch,
 }: AppSidebarProps) => {
+  const [prevSearch, setPrevSearch] = useState<string>("");
   const [search, setSearch] = useState<string>("");
   const [searchDebounce] = useDebounce(search, 600);
 
   useEffect(() => {
-    onSearch(searchDebounce);
+    if (searchDebounce != prevSearch) {
+      setPrevSearch(searchDebounce);
+      onSearch(searchDebounce);
+    }
   }, [searchDebounce]);
 
   useEffect(() => {
@@ -402,7 +407,7 @@ const FormDialogNewGroup = () => {
           </TooltipContent>
         </Tooltip>
 
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent showCloseButton={false} className="sm:max-w-sm">
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>Create Group</DialogTitle>
@@ -564,6 +569,17 @@ export const NavUser = () => {
 
   useEffect(() => {
     if (successLogout) {
+      console.log(successLogout);
+      const deleteDbAndReload = async () => {
+        try {
+          await DeleteDbIdb();
+        } catch (error) {
+          console.log(error);
+        }
+      };
+
+      deleteDbAndReload();
+
       window.location.reload();
     }
   }, [successLogout]);

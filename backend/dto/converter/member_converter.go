@@ -17,3 +17,17 @@ func MemberEntityToDto(member *entity.Member) *dto.Member {
 		Conversation: ConversationEntityToDto(member.Conversation),
 	}
 }
+
+func MemberEntitiesToDto(members []*entity.Member) []*dto.Member {
+	if members == nil {
+		return nil
+	}
+
+	membersDto := make([]*dto.Member, len(members))
+
+	for i, member := range members {
+		membersDto[i] = MemberEntityToDto(member)
+	}
+
+	return membersDto
+}

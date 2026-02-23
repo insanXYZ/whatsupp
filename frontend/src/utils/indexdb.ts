@@ -1,5 +1,5 @@
 import { RowConversationChat } from "@/dto/conversation-dto.ts";
-import { openDB, deleteDB, wrap, unwrap, DBSchema } from "idb";
+import { openDB, deleteDB, DBSchema } from "idb";
 
 export interface WhatsuppIdbSchema extends DBSchema {
   conversations: {
@@ -16,21 +16,12 @@ export const ConnectIdb = async () => {
           keyPath: "conversation_id",
         });
       }
-
-      // if (!database.objectStoreNames.contains("messages")) {
-      //   const store = database.createObjectStore("messages", {
-      //     keyPath: "id",
-      //   });
-      //
-      //   store.createIndex("conversation_id", "conversation_id");
-      //
-      //   store.createIndex("conversation_created", [
-      //     "conversation_id",
-      //     "created_at",
-      //   ]);
-      // }
     },
   });
 
   return db;
+};
+
+export const DeleteDbIdb = async () => {
+  await deleteDB("whatsupp");
 };

@@ -123,20 +123,12 @@ func (cr *ConversationRepository) TakePrivateConversationBySenderAndReceiverId(c
 	return conversation, nil
 }
 
-func (cr *ConversationRepository) TakeConversationByUserAndConversationId(ctx context.Context, userId, conversationId int) (*entity.Conversation, error) {
-	conversation := new(entity.Conversation)
-
-	err := cr.db.WithContext(ctx).Joins("JOIN users on user").Take(conversation, "conversations.id = ?", conversationId).Error
-
-	return conversation, err
-}
-
 func (cr *ConversationRepository) TakeGroupConversationByUserAndConversationId(ctx context.Context, userId, conversationId int) (*entity.Conversation, error) {
 	conversation := new(entity.Conversation)
 
-	cr.db.WithContext(ctx).Joins("JOIN members ON members.conversation_id = conversations.id AND members.user_id = ?", userId).Preload("Members").Take(conversation, "conversations.id = ?", conversationId)
+	err := cr.db.WithContext(ctx).Joins("JOIN members ON members.conversation_id = conversations.id AND members.user_id = ?", userId).Preload("Members").Take(conversation, "conversations.id = ?", conversationId).Error
 
-	return conversation, nil
+	return conversation, err
 }
 
 func (cr *ConversationRepository) FindConversationsByUserId(
@@ -181,4 +173,28 @@ func (cr *ConversationRepository) FindConversationsByUserId(
 	}
 
 	return result, nil
+}
+
+func (cr *ConversationRepository) TakeConversationByConversationAndUserId(ctx context.Context, conversationId, userId int) (*entity.Conversation, error) {
+	conversation := new(entity.Conversation)
+
+	query := `
+			SELECT c.*
+			FROM conversations.c
+			JOIN members m ON m.conversation_id = c.id
+			JOIN users u ON u.id = m.user_id
+			WHERE c.id = ? AND u.id = ?
+	`
+
+	tx := cr.db.WithContext(ctx).Raw(query, conversationId, userId).Scan(conversation)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	if tx.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	return conversation, nil
 }

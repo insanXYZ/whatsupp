@@ -99,3 +99,23 @@ func (cc *ConversationController) JoinGroupConversation(c *echo.Context) error {
 	return util.ResponseOk(c, successMessage, nil)
 
 }
+
+func (cc *ConversationController) ListMembersConversation(c *echo.Context) error {
+	ctx := c.Request().Context()
+	req := new(dto.ListMembersConversationRequest)
+	claims := util.GetClaims(c)
+	err := c.Bind(req)
+	if err != nil {
+		return util.ResponseErr(c, message.ERR_BIND_REQ, err)
+	}
+
+	members, err := cc.conversationService.HandleListMembersConversation(ctx, req, claims)
+	if err != nil {
+		return util.ResponseErr(c, message.ERR_LIST_MEMBERS_CONVERSATION, err)
+	}
+
+	response := converter.MemberEntitiesToDto(members)
+
+	return util.ResponseOk(c, message.SUCCESS_LIST_MEMBERS_CONVERSATION, response)
+
+}

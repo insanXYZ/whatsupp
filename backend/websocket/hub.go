@@ -50,11 +50,37 @@ func (h *Hub) GetClient(clientId int) *entity.User {
 	return client.User
 }
 
+func (h *Hub) DeleteClientConversation(conversationId, clientId int) {
+	clients, ok := h.conversations[conversationId]
+	if ok {
+		delete(clients, clientId)
+	}
+}
+
 func (h *Hub) UpdateClient(id int, user *entity.User) {
 	clients, ok := h.clients[id]
 	if ok {
 		clients.User = user
 	}
+}
+
+func (h *Hub) SendLeaveConversation(clientId int, data *dto.LeaveConversationResponse) error {
+	client, ok := h.clients[clientId]
+	if !ok {
+		return nil
+	}
+
+	event := &dto.EventMessageWs{
+		Event: string(dto.EVENT_LEAVE_CONVERSATION),
+		Data:  data,
+	}
+
+	dataByte, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	return client.Conn.WriteMessage(websocket.TextMessage, dataByte)
 }
 
 func (h *Hub) SendNewConversation(clientId int, data *dto.NewConversationResponse) error {
