@@ -5,7 +5,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Paperclip, Send } from "lucide-react";
 import { ButtonLoading } from "../ui/button-loading";
 import { SendMessageRequest } from "@/dto/ws-dto";
-import { RowConversationChat } from "@/dto/conversation-dto.ts";
+import {
+  CONVERSATION_TYPE_GROUP,
+  RowConversationChat,
+} from "@/dto/conversation-dto.ts";
 import { ItemGetMessageResponse } from "@/dto/message-dto";
 import {
   Dialog,
@@ -116,14 +119,28 @@ export const InsetChat = ({
         {messages?.map((v) =>
           v.is_me ? (
             <div key={v.id} className="flex justify-end">
-              <div className="bg-blue-200 max-w-2/3 rounded p-2">
-                {v.message}
+              <div className="bg-blue-200 flex items-end flex-col max-w-2/3 rounded p-2">
+                <div>{v.message}</div>
               </div>
             </div>
           ) : (
-            <div key={v.id} className="flex justify-start">
-              <div className="bg-green-200 max-w-2/3 rounded p-2">
-                {v.message}
+            <div key={v.id} className="flex gap-2 max-w-2/3">
+              {conversationDetail.conversation_type ===
+                CONVERSATION_TYPE_GROUP && (
+                  <Avatar>
+                    <AvatarImage src={v.user.image} className="bg-gray-profile" />
+                    <AvatarFallback>
+                      {v.user.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              <div className="flex justify-start">
+                <div className="bg-green-200 flex items-start flex-col rounded p-2">
+                  <div className="text-xs text-gray-800">
+                    {v.user.name}#{v.user.id}
+                  </div>
+                  <div>{v.message}</div>
+                </div>
               </div>
             </div>
           ),

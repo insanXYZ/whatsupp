@@ -109,8 +109,6 @@ func (u *UserService) HandleUpdateUser(ctx context.Context, req *dto.UpdateUserR
 		return nil, err
 	}
 
-	u.hub.UpdateClient(user.ID, user)
-
 	return user, err
 }
 

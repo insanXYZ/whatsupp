@@ -424,7 +424,7 @@ const FormDialogNewGroup = () => {
                         {imageSrc ? (
                           <Avatar className="w-24 h-24">
                             <AvatarImage src={imageSrc} alt={imageSrc} />
-                            <AvatarFallback>CN</AvatarFallback>
+                            <AvatarFallback>IM</AvatarFallback>
                           </Avatar>
                         ) : (
                           <Camera
