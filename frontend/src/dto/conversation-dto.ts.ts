@@ -1,4 +1,5 @@
 import z from "zod";
+import { MemberEntity } from "./user-dto";
 
 export interface RowConversationChat {
   id: number;
@@ -8,6 +9,7 @@ export interface RowConversationChat {
   conversation_type: string;
   conversation_id?: number;
   have_joined: boolean;
+  members: MemberEntity[];
 }
 
 export const CONVERSATION_TYPE_PRIVATE = "PRIVATE";
@@ -27,3 +29,5 @@ export const CreateGroupConversationDto = z.object({
   name: z.string().min(3).max(25),
   bio: z.string().optional(),
 });
+
+export const EditGroupConversationDto = CreateGroupConversationDto;

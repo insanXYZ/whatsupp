@@ -1,11 +1,4 @@
-import {
-  Contact,
-  Inbox,
-  LucideIcon,
-  Search,
-  Settings,
-  Users,
-} from "lucide-react";
+import { Contact, Inbox, LucideIcon, Search, Users } from "lucide-react";
 
 export interface NavMain {
   title: string;
@@ -38,11 +31,6 @@ export const Navigations: NavMain[] = [
   {
     title: NAV_TITLE_SEARCH,
     icon: Search,
-    isActive: true,
-  },
-  {
-    title: NAV_TITLE_SETTING,
-    icon: Settings,
     isActive: true,
   },
 ];

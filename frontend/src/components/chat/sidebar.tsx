@@ -65,10 +65,10 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { ButtonLoading } from "../ui/button-loading";
-import Image from "next/image";
 import ReactCrop, { Crop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { DeleteDbIdb } from "@/utils/indexdb";
+import { GetMeResponse } from "@/dto/user-dto";
 
 type AppSidebarProps = {
   contentSidebarDetail?: ReactNode;
@@ -273,7 +273,7 @@ const getCroppedImg = async (
   });
 };
 
-const CropImageDialog = ({
+export const CropImageDialog = ({
   open,
   onOpenChange,
   tempImage,
@@ -569,7 +569,6 @@ export const NavUser = () => {
 
   useEffect(() => {
     if (successLogout) {
-      console.log(successLogout);
       const deleteDbAndReload = async () => {
         try {
           await DeleteDbIdb();

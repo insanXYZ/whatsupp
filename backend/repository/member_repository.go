@@ -65,3 +65,14 @@ func (mr *MemberRepository) FindMembersWithConversationId(ctx context.Context, c
 
 	return members, err
 }
+
+func (mr *MemberRepository) IsAdminConversationByConversationAndUserId(ctx context.Context, conversationId, userId int) (bool, error) {
+	member := new(entity.Member)
+
+	err := mr.db.WithContext(ctx).Take(member, "conversation_id = ? AND user_id = ?", conversationId, userId).Error
+	if err != nil {
+		return false, err
+	}
+
+	return member.Role == entity.MEMBER_TYPE_ADMIN, nil
+}

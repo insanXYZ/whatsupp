@@ -33,11 +33,12 @@ func SetRoute(cfg *RouteConfig) {
 	user.GET("/logout", cfg.userController.Logout)
 
 	conversation := hasJwtRoute.Group("/conversations")
-	conversation.GET("/recent", cfg.conversationController.LoadRecentConversations)
 	conversation.GET("", cfg.conversationController.Lists)
 	conversation.POST("", cfg.conversationController.CreateGroupConversation)
-	conversation.PUT("/:conversationId/members/me_join", cfg.conversationController.JoinGroupConversation)
+	conversation.PUT("/:conversationId", cfg.conversationController.UpdateConversation)
+	conversation.GET("/recent", cfg.conversationController.LoadRecentConversations)
 	conversation.GET("/:conversationId/members", cfg.conversationController.ListMembersConversation)
+	conversation.PUT("/:conversationId/members/me_join", cfg.conversationController.JoinGroupConversation)
 
 	chat := hasJwtRoute.Group("/messages")
 	chat.POST("/attachments", cfg.messageController.UploadFileAttachments)

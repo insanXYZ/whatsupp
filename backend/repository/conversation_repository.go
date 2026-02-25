@@ -37,50 +37,52 @@ func (cr *ConversationRepository) SearchConversationWithNameAndUserId(
 	searchPattern := "%" + name + "%"
 
 	query := `
-				SELECT 
-				'PRIVATE' as conversation_type,
-				u.id,
-				u.name,
-				u.image,
-				u.bio,
-				( SELECT 
-					c.id FROM conversations c
-					INNER JOIN members m1 ON m1.conversation_id = c.id
-					INNER JOIN members m2 ON m2.conversation_id = c.id
-					WHERE c.type = 'PRIVATE'
-					AND m1.user_id = ?
-					AND m2.user_id = u.id
-					LIMIT 1
-				) AS conversation_id ,
-				true as have_joined
+				SELECT
+					'PRIVATE' AS conversation_type,
+					u.id,
+					u.name,
+					u.image,
+					u.bio,
+					c.id AS conversation_id,
+					(c.id IS NOT NULL) AS have_joined
 				FROM users u
-				WHERE u.name ILIKE ?
-				AND u.id != ?
-
-        UNION ALL
-
-        SELECT
-            'GROUP' AS conversation_type,
-            c.id,
-            c.name,
-            c.image,
-            c.bio,
-            c.id AS conversation_id,
-						CASE
-							WHEN m.id IS NOT NULL THEN true
-							ELSE false
-						END AS have_joined
-        FROM conversations c
-				LEFT JOIN members m on m.conversation_id = c.id AND m.user_id = ?
-        WHERE c.type = 'GROUP'
-        AND c.name ILIKE ?
+				LEFT JOIN (
+						SELECT
+								conv.id,
+								other.user_id
+						FROM conversations conv
+						JOIN members me
+								ON me.conversation_id = conv.id
+							 AND me.user_id = ?
+						JOIN members other
+								ON other.conversation_id = conv.id
+							 AND other.user_id != ?
+						WHERE conv.type = 'PRIVATE'
+				) c ON c.user_id = u.id
+				WHERE u.id != 1
+					AND u.name ILIKE ?
+				UNION ALL
+				SELECT
+					'GROUP' AS conversation_type,
+					c.id,
+					c.name,
+					c.image,
+					c.bio,
+					c.id AS conversation_id,
+					(m.id IS NOT NULL) AS have_joined
+				FROM conversations c
+				LEFT JOIN members m
+					ON m.conversation_id = c.id
+					AND m.user_id = ?
+				WHERE c.type = 'GROUP'
+					AND c.name ILIKE ?;
     `
 
 	var results []dto.SearchConversationResponse
 
 	err := cr.db.
 		WithContext(ctx).
-		Raw(query, userId, searchPattern, userId, userId, searchPattern).
+		Raw(query, userId, userId, searchPattern, userId, searchPattern).
 		Scan(&results).Error
 
 	if err != nil {
@@ -134,45 +136,26 @@ func (cr *ConversationRepository) TakeGroupConversationByUserAndConversationId(c
 func (cr *ConversationRepository) FindConversationsByUserId(
 	ctx context.Context,
 	userId int,
-) ([]dto.LoadRecentConversation, error) {
+) ([]*entity.Conversation, error) {
 
-	query := `
-        SELECT
-            COALESCE(u.id, c.id) AS id,
-            COALESCE(u.name, c.name) AS name,
-            COALESCE(u.image, c.image) AS image,
-            COALESCE(u.bio, c.bio) AS bio,
-            c.type AS conversation_type,
-            c.id AS conversation_id,
-						true AS have_joined
+	var privateConversations []*entity.Conversation
 
-        FROM conversations c
-        JOIN members me 
-            ON me.conversation_id = c.id
-
-        LEFT JOIN members other
-            ON other.conversation_id = c.id
-            AND other.user_id != me.user_id
-            AND c.type = 'PRIVATE'
-
-        LEFT JOIN users u
-            ON u.id = other.user_id
-
-        WHERE me.user_id = ?
-    `
-
-	var result []dto.LoadRecentConversation
-
-	err := cr.db.
-		WithContext(ctx).
-		Raw(query, userId).
-		Scan(&result).Error
-
+	err := cr.db.Joins("join members on conversations.id = members.conversation_id and members.user_id = ?", userId).Preload("Members").Preload("Members.User").Find(&privateConversations, "conversations.type = 'PRIVATE'").Error
 	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	var groupConversations []*entity.Conversation
+
+	err = cr.db.Joins("join members on conversations.id = members.conversation_id and members.user_id = ?", 3).Preload("Members").Preload("Members.User").Find(&groupConversations, "conversations.type = 'GROUP'").Error
+	if err != nil {
+		return nil, err
+	}
+
+	results := append(privateConversations, groupConversations...)
+
+	return results, nil
+
 }
 
 func (cr *ConversationRepository) TakeConversationByConversationAndUserId(ctx context.Context, conversationId, userId int) (*entity.Conversation, error) {
@@ -180,7 +163,7 @@ func (cr *ConversationRepository) TakeConversationByConversationAndUserId(ctx co
 
 	query := `
 			SELECT c.*
-			FROM conversations.c
+			FROM conversations c
 			JOIN members m ON m.conversation_id = c.id
 			JOIN users u ON u.id = m.user_id
 			WHERE c.id = ? AND u.id = ?

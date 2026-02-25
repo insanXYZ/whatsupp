@@ -27,7 +27,7 @@ func main() {
 
 	validator := config.NewValidator()
 	app := config.NewEcho()
-	clientStorage, err := config.NewSupabaseStorageClient()
+	storage, err := config.NewSupabaseStorageClient()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -46,9 +46,9 @@ func main() {
 
 	// init service
 
-	messageService := service.NewMessageService(validator, conversationRepository, memberRepository, messageRepository, messageAttachmentRepository, userRepository, hub, clientStorage)
+	messageService := service.NewMessageService(validator, conversationRepository, memberRepository, messageRepository, messageAttachmentRepository, userRepository, hub, storage)
 	userService := service.NewUserService(validator, userRepository, hub)
-	conversationService := service.NewConversationService(validator, memberRepository, conversationRepository, clientStorage, hub)
+	conversationService := service.NewConversationService(validator, memberRepository, conversationRepository, storage, hub)
 
 	// init controller
 

@@ -1,12 +1,4 @@
-interface GetMeResponse {
-  id: number;
-  name: string;
-  image: string;
-  email: string;
-  bio: string;
-}
-
-interface UserEntity {
+export interface UserEntity {
   bio: string;
   email: string;
   id: number;
@@ -14,16 +6,17 @@ interface UserEntity {
   name: string;
 }
 
-interface MemberEntity {
+export type GetMeResponse = UserEntity;
+
+export interface MemberEntity {
   id: number;
-  group_id: number;
-  user_id: number;
   role: string;
   user: UserEntity;
 }
 
-interface MessageEntity {
+export interface MessageEntity {
   id: number;
   message: string;
+  conversation_id: number;
   created_at: string;
 }

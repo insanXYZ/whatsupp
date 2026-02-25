@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"strconv"
 	"whatsupp-backend/dto"
 	"whatsupp-backend/dto/converter"
 	"whatsupp-backend/dto/message"
@@ -42,12 +43,17 @@ func (mc *MessageController) UploadFileAttachments(c *echo.Context) error {
 		return util.ResponseErr(c, message.ERR_RETRIEVE_FILES, err)
 	}
 
+	atoi, err := strconv.Atoi(messageId)
+	if err != nil {
+		return err
+	}
+
 	files, ok := form.File[dto.MULTIPART_FORM_NAME]
 	if !ok {
 		return util.ResponseErr(c, message.ERR_RETRIEVE_FILES, nil)
 	}
 
-	err = mc.messageService.HandleUploadFileAttachments(ctx, messageId, files)
+	err = mc.messageService.HandleUploadFileAttachments(ctx, atoi, files)
 	if err != nil {
 		return util.ResponseErr(c, message.ERR_SEND_FILES, err)
 	}

@@ -1,4 +1,5 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { AccountProvider } from "@/provider/account-provider";
 import { ReactNode } from "react";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -10,7 +11,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         } as React.CSSProperties
       }
     >
-      {children}
+      <AccountProvider>
+        {children}
+      </AccountProvider>
     </SidebarProvider>
   );
 }

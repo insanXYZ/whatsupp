@@ -16,7 +16,6 @@ import (
 	"whatsupp-backend/websocket"
 
 	"github.com/go-playground/validator/v10"
-	storage_go "github.com/supabase-community/storage-go"
 	"gorm.io/gorm"
 )
 
@@ -28,7 +27,7 @@ type MessageService struct {
 	messageAttachmentRepository *repository.MessageAttachmentRepository
 	userRepository              *repository.UserRepository
 	hub                         *websocket.Hub
-	storage                     *storage_go.Client
+	storage                     *storage.Storage
 }
 
 func NewMessageService(
@@ -39,7 +38,7 @@ func NewMessageService(
 	messageAttachmentRepository *repository.MessageAttachmentRepository,
 	userRepository *repository.UserRepository,
 	hub *websocket.Hub,
-	storage *storage_go.Client,
+	storage *storage.Storage,
 ) *MessageService {
 	return &MessageService{
 		userRepository:              userRepository,
@@ -85,7 +84,7 @@ func (cs *MessageService) HandleUpgradeWs(ctx context.Context, claims *util.Clai
 	return nil
 }
 
-func (cs *MessageService) HandleUploadFileAttachments(ctx context.Context, messageID string, files []*multipart.FileHeader) error {
+func (cs *MessageService) HandleUploadFileAttachments(ctx context.Context, messageID int, files []*multipart.FileHeader) error {
 
 	return cs.messageAttachmentRepository.Transaction(ctx, func(tx *gorm.DB) error {
 
@@ -97,34 +96,19 @@ func (cs *MessageService) HandleUploadFileAttachments(ctx context.Context, messa
 
 		messageAttTx := cs.messageAttachmentRepository.WithTx(tx)
 
-		clientStorage := cs.storage
-
 		for _, file := range files {
 
 			ext := filepath.Ext(file.Filename)
 
-			fileName := fmt.Sprintf("whatsupp-%s-%v%s",
-				messageID,
-				time.Now().Unix(),
-				ext,
-			)
-
-			open, err := file.Open()
+			imageUrl, err := cs.storage.UploadFileAttachment(file, messageID)
 			if err != nil {
 				return err
 			}
-
-			_, err = clientStorage.UploadFile(storage.FILE_ATTACHMENT_BUCKET, fileName, open)
-			if err != nil {
-				return err
-			}
-
-			publicUrl := clientStorage.GetPublicUrl(storage.FILE_ATTACHMENT_BUCKET, fileName)
 
 			newMessageAtt := &entity.MessageAttachment{
 				MessageID: messageID,
 				FileExt:   ext,
-				FileURL:   publicUrl.SignedURL,
+				FileURL:   imageUrl,
 			}
 
 			err = messageAttTx.Create(ctx, newMessageAtt)

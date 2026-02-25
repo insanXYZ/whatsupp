@@ -5,11 +5,12 @@ import (
 )
 
 type Message struct {
-	ID           int           `json:"id,omitempty"`
-	Message      string        `json:"message,omitempty"`
-	CreatedAt    time.Time     `json:"created_at"`
-	User         *User         `json:"user,omitempty"`
-	Conversation *Conversation `json:"conversation,omitempty"`
+	ID             int           `json:"id,omitempty"`
+	Message        string        `json:"message,omitempty"`
+	CreatedAt      time.Time     `json:"created_at,omitempty"`
+	ConversationID int           `json:"conversation_id,omitempty"`
+	User           *User         `json:"user,omitempty"`
+	Conversation   *Conversation `json:"conversation,omitempty"`
 }
 
 type eventMessageWs string

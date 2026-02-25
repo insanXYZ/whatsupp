@@ -3,6 +3,7 @@ import {
   CONVERSATION_TYPE_PRIVATE,
   RowConversationChat,
 } from "@/dto/conversation-dto.ts";
+import { ItemGetMessageResponse } from "@/dto/message-dto";
 import { ConnectIdb, WhatsuppIdbSchema } from "@/utils/indexdb";
 import { ToastError } from "@/utils/toast";
 import { IDBPDatabase } from "idb";
@@ -95,6 +96,11 @@ export const useIdb = () => {
     return res;
   };
 
+  const SearchConversationByIdIdb = async (id: number) => {
+    const conversations = await idbRef.current?.get("conversations", id);
+    return conversations;
+  };
+
   const GetAllConversationsIdb = async () => {
     const conversations = await idbRef.current?.getAll("conversations");
     return conversations ? conversations : [];
@@ -115,11 +121,35 @@ export const useIdb = () => {
     await store?.delete(conversationId);
   };
 
+  const AppendMessagesIdb = async (messages: ItemGetMessageResponse[]) => {
+    const tx = idbRef.current?.transaction("messages", "readwrite");
+    const store = tx?.objectStore("messages");
+
+    for (const message of messages) {
+      await store?.put(message);
+    }
+  };
+
+  const AppendMessageIdb = async (message: ItemGetMessageResponse) => {
+    const tx = idbRef.current?.transaction("messages", "readwrite");
+    const store = tx?.objectStore("messages");
+
+    await store?.put(message);
+  };
+
+  const GetMessagesWithConversationId = async (conversationId: number) => {
+    const messages = await idbRef.current?.getFromIndex(
+      "messages",
+      "conversation_id",
+      conversationId,
+    );
+    return messages;
+  };
+
   useEffect(() => {
     ConnectIdb()
       .then((idb) => (idbRef.current = idb))
       .catch(() => {
-        // setConnect(false);
         ToastError(
           "Error connected IndexedDB",
           "Please refresh this page, or if thats not help, you can send issues to https://github.com/insanXYZ/whatsupp/issues",
@@ -130,10 +160,14 @@ export const useIdb = () => {
   return {
     AppendConversationsIdb,
     AppendConversationIdb,
+    AppendMessagesIdb,
+    AppendMessageIdb,
     SearchConversationsByNameIdb,
     SearchGroupConversationsByNameIdb,
     SearchPrivateConversationsByNameIdb,
+    SearchConversationByIdIdb,
     GetAllConversationsIdb,
+    GetMessagesWithConversationId,
     ReplaceConversationsIdb,
     DeleteConversationIdb,
   };

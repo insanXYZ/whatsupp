@@ -12,7 +12,6 @@ import {
 } from "@/components/chat/sidebar";
 import {
   CONVERSATION_TYPE_GROUP,
-  CONVERSATION_TYPE_PRIVATE,
   RowConversationChat,
 } from "@/dto/conversation-dto.ts";
 import { GetMessageResponse } from "@/dto/message-dto";
@@ -32,6 +31,9 @@ import { useEffect, useState } from "react";
 
 export default function Page() {
   const [activeItem, setActiveItem] = useState<string>(NAV_TITLE_CHAT);
+  const [recordHaveMutateMessage, setRecordHaveMutateMessage] = useState<
+    Record<number, boolean>
+  >({});
 
   const { setMessages, appendMessage, messagesByChatKey } = useMessages();
   const {
@@ -48,22 +50,25 @@ export default function Page() {
     GetAllConversationsIdb,
     SearchGroupConversationsByNameIdb,
     SearchPrivateConversationsByNameIdb,
+    SearchConversationByIdIdb,
     ReplaceConversationsIdb,
     DeleteConversationIdb,
     AppendConversationIdb,
+    AppendMessagesIdb,
+    AppendMessageIdb,
   } = useIdb();
 
   const { send, connected } = useChatSocket({
-    onNewMessage: (data) => {
+    onNewMessage: async (data) => {
       const message = data.message;
+      if (message) {
+        await AppendMessageIdb(message);
+      }
       appendMessage(data.conversation_id, message);
     },
     onNewConversation: async (data) => {
       try {
         AppendConversationIdb(data);
-        console.log("activeItem:", activeItem);
-        console.log("activeChat:", activeChat);
-        console.log("data:", data);
 
         if (activeItem === NAV_TITLE_SEARCH) {
           if (
@@ -144,9 +149,23 @@ export default function Page() {
     });
   };
 
-  const onClickConversationChat = (v: RowConversationChat) => {
-    console.log("onClickConversationChat");
-    setActiveChat(v);
+  const onClickConversationChat = async (v: RowConversationChat) => {
+    if (
+      v.have_joined &&
+      v.conversation_type === CONVERSATION_TYPE_GROUP &&
+      !v.members
+    ) {
+      const conversation = await SearchConversationByIdIdb(v.conversation_id!);
+      if (conversation) {
+        setActiveChat(conversation);
+      }
+    } else {
+      setActiveChat(v);
+    }
+
+    if (v.conversation_id && recordHaveMutateMessage[v.conversation_id]) {
+      return;
+    }
 
     if (v.conversation_id && v.have_joined) {
       mutateGetMessages({
@@ -220,6 +239,13 @@ export default function Page() {
     if (isSuccessGetMessages && dataGetMessages.data) {
       const data = dataGetMessages.data as GetMessageResponse;
       const messages = data.messages;
+
+      setRecordHaveMutateMessage((prev) => ({
+        ...prev,
+        [data.conversation_id]: true,
+      }));
+
+      AppendMessagesIdb(messages);
 
       setMessages(data.conversation_id, messages);
     }

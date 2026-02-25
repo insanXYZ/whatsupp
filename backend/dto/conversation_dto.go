@@ -30,7 +30,10 @@ type SearchConversationResponse struct {
 	HaveJoined       bool   `json:"have_joined"`
 }
 
-type LoadRecentConversation = SearchConversationResponse
+type LoadRecentConversation struct {
+	*SearchConversationResponse
+	Members []*Member `json:"members"`
+}
 
 type NewConversationResponse = SearchConversationResponse
 
@@ -38,6 +41,13 @@ type CreateGroupConversationRequest struct {
 	Name  string                `form:"name" validate:"required,min=3,max=25"`
 	Bio   string                `form:"bio" `
 	Image *multipart.FileHeader `validate:"-"`
+}
+
+type UpdateGroupConversationRequest struct {
+	ConversationId int                   `param:"conversationId"`
+	Name           string                `form:"name" validate:"required,min=3,max=25"`
+	Bio            string                `form:"bio" `
+	Image          *multipart.FileHeader `validate:"-"`
 }
 
 type ListMembersConversationRequest struct {

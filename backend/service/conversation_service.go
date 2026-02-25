@@ -3,10 +3,8 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
-	"path/filepath"
-	"time"
 	"whatsupp-backend/dto"
+	"whatsupp-backend/dto/message"
 	"whatsupp-backend/entity"
 	"whatsupp-backend/repository"
 	"whatsupp-backend/storage"
@@ -15,7 +13,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/insanXYZ/sage"
-	storage_go "github.com/supabase-community/storage-go"
 	"gorm.io/gorm"
 )
 
@@ -23,11 +20,11 @@ type ConversationService struct {
 	validator              *validator.Validate
 	conversationRepository *repository.ConversationRepository
 	memberRepsitory        *repository.MemberRepository
-	storage                *storage_go.Client
+	storage                *storage.Storage
 	hub                    *websocket.Hub
 }
 
-func NewConversationService(validator *validator.Validate, memberRepository *repository.MemberRepository, conversationRepository *repository.ConversationRepository, storage *storage_go.Client, hub *websocket.Hub) *ConversationService {
+func NewConversationService(validator *validator.Validate, memberRepository *repository.MemberRepository, conversationRepository *repository.ConversationRepository, storage *storage.Storage, hub *websocket.Hub) *ConversationService {
 
 	return &ConversationService{
 		storage:                storage,
@@ -42,7 +39,7 @@ func (cs *ConversationService) HandleFindConversations(ctx context.Context, clai
 	return cs.conversationRepository.SearchConversationWithNameAndUserId(ctx, claims.Sub, req.Name)
 }
 
-func (cs *ConversationService) HandleLoadRecentConversations(ctx context.Context, claims *util.Claims) ([]dto.LoadRecentConversation, error) {
+func (cs *ConversationService) HandleLoadRecentConversations(ctx context.Context, claims *util.Claims) ([]*entity.Conversation, error) {
 	return cs.conversationRepository.FindConversationsByUserId(ctx, claims.Sub)
 }
 
@@ -64,40 +61,16 @@ func (cs *ConversationService) HandleCreateGroupConversation(ctx context.Context
 
 	err = cs.conversationRepository.Transaction(ctx, func(tx *gorm.DB) error {
 
+		conversationTx := cs.conversationRepository.WithTx(tx)
+
 		imageConversation := storage.DEFAULT_CONVERSATION_PROFILE_PICTURE
-
-		if req.Image != nil {
-			filename := fmt.Sprintf("%d-%s%s", time.Now().Unix(), req.Name, filepath.Ext(req.Image.Filename))
-
-			file, err := req.Image.Open()
-			if err != nil {
-				return err
-			}
-
-			defer file.Close()
-
-			contentType := req.Image.Header.Get("Content-Type")
-
-			fileOption := storage_go.FileOptions{
-				ContentType: &contentType,
-			}
-
-			_, err = cs.storage.UploadFile(storage.CONVERSATION_PROFILE_BUCKET, filename, file, fileOption)
-			if err != nil {
-				return err
-			}
-
-			signed := cs.storage.GetPublicUrl(storage.CONVERSATION_PROFILE_BUCKET, filename)
-			imageConversation = signed.SignedURL
-
-		}
 
 		newConversation = &entity.Conversation{
 			Name:             req.Name,
 			Bio:              req.Bio,
 			ConversationType: entity.CONV_TYPE_GROUP,
 			Image:            imageConversation,
-			Members: []entity.Member{
+			Members: []*entity.Member{
 				{
 					UserID: claims.Sub,
 					Role:   entity.MEMBER_TYPE_ADMIN,
@@ -105,9 +78,24 @@ func (cs *ConversationService) HandleCreateGroupConversation(ctx context.Context
 			},
 		}
 
-		err = cs.conversationRepository.WithTx(tx).Create(ctx, newConversation)
+		err = conversationTx.Create(ctx, newConversation)
 		if err != nil {
 			return err
+		}
+
+		if req.Image != nil {
+			imageUrl, err := cs.storage.UploadFileConversationProfile(req.Image, newConversation.ID)
+
+			if err != nil {
+				return err
+			}
+
+			newConversation.Image = imageUrl
+
+			err = conversationTx.Update(ctx, newConversation)
+			if err != nil {
+				return err
+			}
 		}
 
 		newConversationResponse := &dto.NewConversationResponse{
@@ -220,5 +208,68 @@ func (cs *ConversationService) HandleListMembersConversation(ctx context.Context
 	}
 
 	return cs.memberRepsitory.FindMembersWithConversationId(ctx, conversation.ID)
+
+}
+
+func (cs *ConversationService) HandleUpdateGroupConversation(ctx context.Context, req *dto.UpdateGroupConversationRequest, claims *util.Claims) error {
+	err := cs.validator.Struct(req)
+	if err != nil {
+		return err
+	}
+
+	if req.Image != nil {
+		err = sage.Validate(req.Image)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	err = cs.conversationRepository.Transaction(ctx, func(tx *gorm.DB) error {
+
+		memberTx := cs.memberRepsitory.WithTx(tx)
+		conversationTx := cs.conversationRepository.WithTx(tx)
+
+		conversation, err := conversationTx.TakeById(ctx, req.ConversationId)
+		if err != nil {
+			return err
+		}
+
+		isAdmin, err := memberTx.IsAdminConversationByConversationAndUserId(ctx, conversation.ID, claims.Sub)
+		if err != nil {
+			return err
+		}
+
+		if !isAdmin {
+			return errors.New(message.ERR_UPDATE_CONVERSATION_ACCESS_DENIED)
+		}
+
+		conversation.Name = req.Name
+		conversation.Bio = req.Bio
+
+		err = conversationTx.Update(ctx, conversation)
+		if err != nil {
+			return err
+		}
+
+		if req.Image != nil {
+			imageUrl, err := cs.storage.UploadFileConversationProfile(req.Image, conversation.ID)
+			if err != nil {
+				return err
+			}
+
+			conversation.Image = imageUrl
+
+			err = conversationTx.Update(ctx, conversation)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+
+	})
+
+	return err
 
 }

@@ -41,12 +41,14 @@ func (cc *ConversationController) LoadRecentConversations(c *echo.Context) error
 	ctx := c.Request().Context()
 	claims := util.GetClaims(c)
 
-	recentConversations, err := cc.conversationService.HandleLoadRecentConversations(ctx, claims)
+	conversations, err := cc.conversationService.HandleLoadRecentConversations(ctx, claims)
 	if err != nil {
 		return util.ResponseErr(c, message.ERR_LIST_RECENT_CONVERSATION, err)
 	}
 
-	return util.ResponseOk(c, message.SUCCESS_LIST_RECENT_CONVERSATION, recentConversations)
+	result := converter.ConversationEntitiesToLoadRecentConversationsDto(conversations, claims.Sub)
+	return util.ResponseOk(c, message.SUCCESS_LIST_RECENT_CONVERSATION, result)
+
 }
 
 func (cc *ConversationController) CreateGroupConversation(c *echo.Context) error {
@@ -118,4 +120,26 @@ func (cc *ConversationController) ListMembersConversation(c *echo.Context) error
 
 	return util.ResponseOk(c, message.SUCCESS_LIST_MEMBERS_CONVERSATION, response)
 
+}
+
+func (cc *ConversationController) UpdateConversation(c *echo.Context) error {
+	ctx := c.Request().Context()
+	claims := util.GetClaims(c)
+	req := new(dto.UpdateGroupConversationRequest)
+	err := c.Bind(req)
+	if err != nil {
+		return util.ResponseErr(c, message.ERR_BIND_REQ, err)
+	}
+
+	fileHeader, err := c.FormFile("image")
+	if err == nil {
+		req.Image = fileHeader
+	}
+
+	err = cc.conversationService.HandleUpdateGroupConversation(ctx, req, claims)
+	if err != nil {
+		return util.ResponseErr(c, message.ERR_UPDATE_CONVERSATION, err)
+	}
+
+	return util.ResponseOk(c, message.SUCCESS_UPDATE_CONVERSATION, nil)
 }

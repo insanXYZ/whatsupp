@@ -1,23 +1,44 @@
-import { FormEvent, ReactNode, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { SidebarInset, SidebarTrigger } from "../ui/sidebar";
 import { Separator } from "../ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Paperclip, Send } from "lucide-react";
+import { LoaderCircle, Paperclip, Send } from "lucide-react";
 import { ButtonLoading } from "../ui/button-loading";
 import { SendMessageRequest } from "@/dto/ws-dto";
 import {
   CONVERSATION_TYPE_GROUP,
+  CONVERSATION_TYPE_PRIVATE,
+  CreateGroupConversationDto,
+  EditGroupConversationDto,
   RowConversationChat,
 } from "@/dto/conversation-dto.ts";
 import { ItemGetMessageResponse } from "@/dto/message-dto";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
+import {
+  ContentType,
+  HttpMethod,
+  Mutation,
+  useQueryData,
+} from "@/utils/tanstack";
+import z from "zod";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { CropImageDialog } from "./sidebar";
+import { useAccount } from "@/hooks/use-account";
+import { MemberEntity } from "@/dto/user-dto";
+import { MEMBER_ROLE_ADMIN } from "@/dto/member-dto";
 
 type AppSidebarInsetProps = {
   header?: ReactNode;
@@ -47,32 +68,237 @@ type InsetHeaderConversationProps = {
 export const InsetHeaderConversationProfile = ({
   conversation,
 }: InsetHeaderConversationProps) => {
+  const { user } = useAccount();
+
+  const { mutate, isPending, isSuccess } = Mutation(["editGroup"], true);
+
+  const [imageSrc, setImageSrc] = useState<string>();
+  const [tempImage, setTempImage] = useState<string>();
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
+  const form = useForm<z.infer<typeof EditGroupConversationDto>>({
+    defaultValues: {
+      image: undefined,
+      name: conversation.name,
+      bio: conversation.bio,
+    },
+    resolver: zodResolver(EditGroupConversationDto),
+  });
+
+  const onSubmit = (data: z.infer<typeof EditGroupConversationDto>) => {
+    const formData = new FormData();
+    if (data.image) {
+      formData.append("image", data.image!);
+    }
+    if (data.bio) {
+      formData.append("bio", data.bio!);
+    }
+    formData.append("name", data.name);
+
+    mutate({
+      body: formData,
+      method: HttpMethod.PUT,
+      url: `/conversations/${conversation.id}`,
+      contentType: ContentType.FORM,
+    });
+  };
+
+  useEffect(() => {
+    if (conversation.members) {
+      const filtered = conversation.members.find(
+        (member) => member.user.id === user?.id,
+      );
+
+      if (filtered) {
+        setIsAdmin(filtered.role === MEMBER_ROLE_ADMIN);
+      }
+    }
+  }, [conversation]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      setFormDialogOpen(false);
+    }
+  }, [isSuccess]);
+
+  useEffect(() => {
+    return () => {
+      if (imageSrc) URL.revokeObjectURL(imageSrc);
+      if (tempImage) URL.revokeObjectURL(tempImage);
+    };
+  }, [imageSrc, tempImage]);
+
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <div className="w-full cursor-pointer flex items-center ">
-          <div className="flex gap-5 items-center">
-            <Avatar className="h-7 w-7 rounded-lg">
-              <AvatarImage
-                src={conversation.image}
-                alt={conversation.name}
-                className="bg-gray-profile"
-              />
-              <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-            </Avatar>
-            <div>{conversation.name}</div>
+    <>
+      <Dialog open={formDialogOpen} onOpenChange={setFormDialogOpen}>
+        <DialogTrigger asChild>
+          <div className="w-full cursor-pointer flex items-center ">
+            <div className="flex gap-5 items-center">
+              <Avatar className="h-7 w-7 rounded-lg">
+                <AvatarImage
+                  src={conversation.image}
+                  alt={conversation.name}
+                  className="bg-gray-profile"
+                />
+                <AvatarFallback className="rounded-lg">
+                  {conversation.name.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>{conversation.name}</div>
+            </div>
           </div>
-        </div>
-      </DialogTrigger>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>
-            Detail {conversation.conversation_type.toLowerCase()}
-          </DialogTitle>
-          <DialogDescription></DialogDescription>
-        </DialogHeader>
-      </DialogContent>
-    </Dialog>
+        </DialogTrigger>
+
+        <DialogContent showCloseButton={false} className="sm:max-w-sm">
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <DialogHeader>
+              <DialogTitle>
+                Detail{" "}
+                {conversation.conversation_type === CONVERSATION_TYPE_PRIVATE
+                  ? "user"
+                  : "group"}
+              </DialogTitle>
+            </DialogHeader>
+
+            <FieldGroup>
+              <Controller
+                control={form.control}
+                name="image"
+                render={({ field: { ref, name, onBlur }, fieldState }) => (
+                  <Field>
+                    <FieldLabel htmlFor="image">
+                      <div className="w-full flex items-center justify-center">
+                        {imageSrc ? (
+                          <Avatar className="w-24 h-24">
+                            <AvatarImage
+                              className="bg-gray-profile"
+                              src={imageSrc}
+                              alt={imageSrc}
+                            />
+                            <AvatarFallback>
+                              {conversation.name.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        ) : (
+                          <Avatar className="w-24 h-24">
+                            <AvatarImage
+                              className="bg-gray-profile"
+                              src={conversation.image}
+                              alt={conversation.name}
+                            />
+                            <AvatarFallback>
+                              {conversation.name.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                      </div>
+                    </FieldLabel>
+
+                    <Input
+                      id="image"
+                      name={name}
+                      ref={ref}
+                      type="file"
+                      accept="image/*"
+                      onBlur={onBlur}
+                      hidden
+                      disabled={
+                        conversation.conversation_type ===
+                        CONVERSATION_TYPE_PRIVATE ||
+                        (conversation.conversation_type ===
+                          CONVERSATION_TYPE_GROUP &&
+                          !isAdmin)
+                      }
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        const url = URL.createObjectURL(file);
+                        setTempImage(url);
+                        setCropDialogOpen(true);
+                      }}
+                    />
+
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
+
+              <Controller
+                control={form.control}
+                name="name"
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <FieldLabel htmlFor="name">Name</FieldLabel>
+                    <Input
+                      {...field}
+                      id="name"
+                      disabled={
+                        conversation.conversation_type ===
+                        CONVERSATION_TYPE_PRIVATE ||
+                        (conversation.conversation_type ===
+                          CONVERSATION_TYPE_GROUP &&
+                          !isAdmin)
+                      }
+                    />
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
+
+              <Controller
+                control={form.control}
+                name="bio"
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <FieldLabel htmlFor="bio">Bio</FieldLabel>
+                    <Input
+                      {...field}
+                      id="bio"
+                      disabled={
+                        conversation.conversation_type ===
+                        CONVERSATION_TYPE_PRIVATE ||
+                        (conversation.conversation_type ===
+                          CONVERSATION_TYPE_GROUP &&
+                          !isAdmin)
+                      }
+                    />
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
+
+              {conversation.conversation_type != CONVERSATION_TYPE_PRIVATE &&
+                isAdmin && (
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline" type="button">
+                        Cancel
+                      </Button>
+                    </DialogClose>
+
+                    <ButtonLoading type="submit" isPending={isPending}>
+                      Update
+                    </ButtonLoading>
+                  </DialogFooter>
+                )}
+            </FieldGroup>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <CropImageDialog
+        open={cropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        tempImage={tempImage}
+        onCropComplete={(file, previewUrl) => {
+          form.setValue("image", file);
+          setImageSrc(previewUrl);
+        }}
+      />
+    </>
   );
 };
 

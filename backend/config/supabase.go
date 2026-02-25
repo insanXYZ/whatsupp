@@ -30,7 +30,7 @@ func createBucketIfNotExists(
 	return err
 }
 
-func NewSupabaseStorageClient() (*storage_go.Client, error) {
+func NewSupabaseStorageClient() (*storage.Storage, error) {
 	client := storage_go.NewClient(
 		os.Getenv("SUPABASE_STORAGE_RAW_URL"),
 		os.Getenv("SUPABASE_STORAGE_TOKEN"),
@@ -55,7 +55,9 @@ func NewSupabaseStorageClient() (*storage_go.Client, error) {
 		return nil, err
 	}
 
-	storage.InitStorage()
+	storage := &storage.Storage{
+		Client: client,
+	}
 
-	return client, nil
+	return storage, nil
 }

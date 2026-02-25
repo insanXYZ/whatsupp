@@ -4,7 +4,7 @@ import "time"
 
 type MessageAttachment struct {
 	ID        int       `gorm:"column:id;primaryKey,autoIncrement"`
-	MessageID string    `gorm:"column:message_id"`
+	MessageID int       `gorm:"column:message_id"`
 	FileURL   string    `gorm:"column:file_url"`
 	FileExt   string    `gorm:"column:file_type"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
