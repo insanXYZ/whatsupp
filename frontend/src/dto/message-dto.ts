@@ -1,3 +1,5 @@
+import { MessageEntity, UserEntity } from "./user-dto";
+
 export interface ItemGetMessageResponse extends MessageEntity {
   is_me: boolean;
   user: UserEntity;

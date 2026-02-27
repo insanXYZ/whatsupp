@@ -12,6 +12,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type SyncConversationFunc func(conversationId int) error
+
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
@@ -28,6 +30,8 @@ type Hub struct {
 
 	// Unregister requests from clients.
 	unregister chan *Client
+
+	SyncConversation SyncConversationFunc
 }
 
 func NewHub() *Hub {
@@ -64,14 +68,15 @@ func (h *Hub) UpdateClient(id int, user *entity.User) {
 	}
 }
 
-func (h *Hub) SendLeaveConversation(clientId int, data *dto.LeaveConversationResponse) error {
+func (h *Hub) sendMessageClient(clientId int, eventName string, data any) error {
+
 	client, ok := h.clients[clientId]
 	if !ok {
 		return nil
 	}
 
 	event := &dto.EventMessageWs{
-		Event: string(dto.EVENT_LEAVE_CONVERSATION),
+		Event: eventName,
 		Data:  data,
 	}
 
@@ -83,14 +88,15 @@ func (h *Hub) SendLeaveConversation(clientId int, data *dto.LeaveConversationRes
 	return client.Conn.WriteMessage(websocket.TextMessage, dataByte)
 }
 
-func (h *Hub) SendNewConversation(clientId int, data *dto.NewConversationResponse) error {
-	client, ok := h.clients[clientId]
+func (h *Hub) sendMessageConversations(conversationId int, eventName string, data any) error {
+
+	clients, ok := h.conversations[conversationId]
 	if !ok {
 		return nil
 	}
 
 	event := &dto.EventMessageWs{
-		Event: string(dto.EVENT_NEW_CONVERSATION),
+		Event: eventName,
 		Data:  data,
 	}
 
@@ -99,7 +105,32 @@ func (h *Hub) SendNewConversation(clientId int, data *dto.NewConversationRespons
 		return err
 	}
 
-	return client.Conn.WriteMessage(websocket.TextMessage, dataByte)
+	for clientId, ok := range clients {
+		if ok {
+			client, ok := h.clients[clientId]
+			if ok {
+				client.Conn.WriteMessage(websocket.TextMessage, dataByte)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (h *Hub) SendLeaveConversation(clientId int, data *dto.LeaveConversationResponse) error {
+	return h.sendMessageClient(clientId, string(dto.EVENT_LEAVE_CONVERSATION), data)
+}
+
+func (h *Hub) SendMemberLeaveConversation(data *dto.MemberLeaveConversationResponse) error {
+	return h.sendMessageConversations(data.ConversationId, string(dto.EVENT_MEMBER_LEAVE_CONVERSATION), data)
+}
+
+func (h *Hub) SendMemberJoinConversation(conversationId int, data *dto.MemberJoinConversationResponse) error {
+	return h.sendMessageConversations(conversationId, string(dto.EVENT_MEMBER_JOIN_CONVERSATION), data)
+}
+
+func (h *Hub) SendNewConversation(clientId int, data *dto.NewConversationResponse) error {
+	return h.sendMessageClient(clientId, string(dto.EVENT_NEW_CONVERSATION), data)
 }
 
 func (h *Hub) CreateConversation(conversationID int, members []int) {

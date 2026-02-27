@@ -74,8 +74,11 @@ func (c *Client) ReadPump() {
 		c.Conn.Close()
 	}()
 	c.Conn.SetReadLimit(maxMessageSize)
-	// c.Conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.Conn.SetPongHandler(func(string) error { c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 	for {
 		mt, message, err := c.Conn.ReadMessage()
 		if err != nil {
@@ -186,7 +189,6 @@ func (c *Client) WritePump() {
 
 			w.Write(msgByte)
 
-			// Add queued chat messages to the current websocket message.
 			n := len(c.Send)
 			for range n {
 				broadcast, ok := <-c.Send

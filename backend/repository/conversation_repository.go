@@ -133,6 +133,18 @@ func (cr *ConversationRepository) TakeGroupConversationByUserAndConversationId(c
 	return conversation, err
 }
 
+func (cr *ConversationRepository) TakeGroupConversationLeftJoinMemberByUserAndConversationId(ctx context.Context, userId, conversationId int) (*entity.Conversation, error) {
+
+	conversation := new(entity.Conversation)
+
+	err := cr.db.WithContext(ctx).Preload("Members", "members.user_id = ?", userId).Take(conversation, "conversations.id = ?", conversationId).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return conversation, nil
+}
+
 func (cr *ConversationRepository) FindConversationsByUserId(
 	ctx context.Context,
 	userId int,
@@ -147,7 +159,7 @@ func (cr *ConversationRepository) FindConversationsByUserId(
 
 	var groupConversations []*entity.Conversation
 
-	err = cr.db.Joins("join members on conversations.id = members.conversation_id and members.user_id = ?", 3).Preload("Members").Preload("Members.User").Find(&groupConversations, "conversations.type = 'GROUP'").Error
+	err = cr.db.Joins("join members on conversations.id = members.conversation_id and members.user_id = ?", userId).Preload("Members").Preload("Members.User").Find(&groupConversations, "conversations.type = 'GROUP'").Error
 	if err != nil {
 		return nil, err
 	}

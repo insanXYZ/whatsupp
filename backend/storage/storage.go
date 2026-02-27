@@ -21,8 +21,7 @@ var (
 	DEFAULT_CONVERSATION_PROFILE_PICTURE string
 )
 
-func init() {
-
+func initStorage() {
 	DEFAULT_PROFILE_PICTURE_URL = fmt.Sprintf("%s/object/public/%s/default.png",
 		os.Getenv("SUPABASE_STORAGE_RAW_URL"),
 		USER_PROFILE_BUCKET,
@@ -40,6 +39,8 @@ type Storage struct {
 }
 
 func NewStorage(client *storage_go.Client) *Storage {
+	initStorage()
+
 	return &Storage{
 		Client: client,
 	}

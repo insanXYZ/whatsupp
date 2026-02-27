@@ -12,6 +12,7 @@ import {
 } from "@/components/chat/sidebar";
 import {
   CONVERSATION_TYPE_GROUP,
+  CONVERSATION_TYPE_PRIVATE,
   RowConversationChat,
 } from "@/dto/conversation-dto.ts";
 import { GetMessageResponse } from "@/dto/message-dto";
@@ -19,7 +20,7 @@ import { EVENT_SEND_MESSAGE, EventWs, SendMessageRequest } from "@/dto/ws-dto";
 import { useChatSocket } from "@/hooks/use-chat-socket";
 import { useConversations } from "@/hooks/use-conversations";
 import { useIdb } from "@/hooks/use-idb";
-import { useMessages } from "@/hooks/use-messages";
+import { useMessages } from "@/hooks/use-message";
 import {
   NAV_TITLE_CHAT,
   NAV_TITLE_CONTACTS,
@@ -35,7 +36,6 @@ export default function Page() {
     Record<number, boolean>
   >({});
 
-  const { setMessages, appendMessage, messagesByChatKey } = useMessages();
   const {
     activeChat,
     setActiveChat,
@@ -45,17 +45,22 @@ export default function Page() {
     overwriteConversations,
   } = useConversations();
 
+  const { messages, AppendMessage, OverwriteMessages } = useMessages();
+
   const {
     SearchConversationsByNameIdb,
     GetAllConversationsIdb,
     SearchGroupConversationsByNameIdb,
     SearchPrivateConversationsByNameIdb,
     SearchConversationByIdIdb,
-    ReplaceConversationsIdb,
     DeleteConversationIdb,
     AppendConversationIdb,
+    AppendConversationsIdb,
     AppendMessagesIdb,
     AppendMessageIdb,
+    AppendMembersIdb,
+    GetMessagesByConversationIdIdb,
+    GetMembersByConversationIdIdb,
   } = useIdb();
 
   const { send, connected } = useChatSocket({
@@ -63,8 +68,11 @@ export default function Page() {
       const message = data.message;
       if (message) {
         await AppendMessageIdb(message);
+
+        if (activeChat?.conversation_id == data.conversation_id) {
+          AppendMessage(message);
+        }
       }
-      appendMessage(data.conversation_id, message);
     },
     onNewConversation: async (data) => {
       try {
@@ -75,7 +83,7 @@ export default function Page() {
             activeChat?.id === data.id &&
             activeChat.conversation_type === data.conversation_type
           ) {
-            setActiveChat(data);
+            SetActiveChatWithMemberAndMessageConversation(data);
           }
         }
 
@@ -102,12 +110,14 @@ export default function Page() {
         }
 
         if (activeChat?.conversation_id === data.conversation_id) {
-          setActiveChat(undefined);
+          SetActiveChatWithMemberAndMessageConversation(undefined);
         }
       } catch (err) {
         console.log(err);
       }
     },
+    onMemberLeaveConversation: async (data) => { },
+    onMemberJoinConversation: async (data) => { },
   });
 
   const {
@@ -149,31 +159,55 @@ export default function Page() {
     });
   };
 
-  const onClickConversationChat = async (v: RowConversationChat) => {
-    if (
-      v.have_joined &&
-      v.conversation_type === CONVERSATION_TYPE_GROUP &&
-      !v.members
-    ) {
-      const conversation = await SearchConversationByIdIdb(v.conversation_id!);
-      if (conversation) {
-        setActiveChat(conversation);
-      }
-    } else {
-      setActiveChat(v);
-    }
+  const SetActiveChatWithMemberAndMessageConversation = async (
+    conversation: RowConversationChat | undefined,
+  ) => {
+    OverwriteMessages([]);
 
-    if (v.conversation_id && recordHaveMutateMessage[v.conversation_id]) {
+    if (conversation == undefined) {
+      setActiveChat(undefined);
       return;
     }
 
-    if (v.conversation_id && v.have_joined) {
-      mutateGetMessages({
-        body: null,
-        method: HttpMethod.GET,
-        url: "/messages/" + v.conversation_id,
-      });
+    if (conversation.conversation_id && !conversation.members) {
+      const members = await GetMembersByConversationIdIdb(
+        conversation.conversation_id!,
+      );
+      conversation.members = members ?? members;
     }
+
+    setActiveChat(conversation);
+
+    if (conversation.conversation_id && conversation.have_joined) {
+      if (!recordHaveMutateMessage[conversation.conversation_id]) {
+        mutateGetMessages({
+          body: null,
+          method: HttpMethod.GET,
+          url: "/messages/" + conversation.conversation_id,
+        });
+      } else {
+        const messages = await GetMessagesByConversationIdIdb(
+          conversation.conversation_id!,
+        );
+        OverwriteMessages(messages ? messages : []);
+      }
+    }
+  };
+
+  const onClickConversationChat = async (v: RowConversationChat) => {
+    switch (v.conversation_type) {
+      case CONVERSATION_TYPE_PRIVATE:
+        if (v.id == activeChat?.id) {
+          return;
+        }
+        break;
+      case CONVERSATION_TYPE_GROUP:
+        if (v.conversation_id == activeChat?.conversation_id) {
+          return;
+        }
+        break;
+    }
+    SetActiveChatWithMemberAndMessageConversation(v);
   };
 
   const onSearch = async (v: string) => {
@@ -247,7 +281,9 @@ export default function Page() {
 
       AppendMessagesIdb(messages);
 
-      setMessages(data.conversation_id, messages);
+      if (activeChat?.conversation_id == data.conversation_id) {
+        OverwriteMessages(messages);
+      }
     }
   }, [isSuccessGetMessages]);
 
@@ -257,7 +293,25 @@ export default function Page() {
         ? (dataGetRecentConversations.data as RowConversationChat[])
         : [];
 
-      ReplaceConversationsIdb(conversations);
+      const conversationsIdbVal: RowConversationChat[] = conversations.map(
+        (conversation) => {
+          return {
+            conversation_type: conversation.conversation_type,
+            have_joined: conversation.have_joined,
+            bio: conversation.bio,
+            id: conversation.id,
+            image: conversation.image,
+            name: conversation.name,
+            conversation_id: conversation.conversation_id,
+          };
+        },
+      );
+
+      AppendConversationsIdb(conversationsIdbVal);
+
+      AppendMembersIdb(
+        conversations.flatMap((conversation) => conversation.members!),
+      );
 
       if (activeItem === NAV_TITLE_CHAT) {
         overwriteConversations(conversations);
@@ -268,7 +322,6 @@ export default function Page() {
   useEffect(() => {
     if (isSuccessSearchConversations && activeItem == NAV_TITLE_SEARCH) {
       const data = dataSearchConversations.data as RowConversationChat[];
-
       overwriteConversations(data);
     }
   }, [isSuccessSearchConversations]);
@@ -301,13 +354,7 @@ export default function Page() {
               onSubmitMembershipGroupConversation={
                 onSubmitMembershipGroupConversation
               }
-              messages={
-                activeChat.conversation_id
-                  ? messagesByChatKey[
-                  `conversation-${activeChat.conversation_id}`
-                  ]
-                  : []
-              }
+              messages={messages}
               onSubmit={handleSendMessage}
               conversationDetail={activeChat}
             />

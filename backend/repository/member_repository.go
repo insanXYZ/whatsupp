@@ -58,7 +58,7 @@ func (mr *MemberRepository) GetUserIdsWithConversationId(ctx context.Context, co
 	return userIds, nil
 }
 
-func (mr *MemberRepository) FindMembersWithConversationId(ctx context.Context, conversationId int) ([]*entity.Member, error) {
+func (mr *MemberRepository) FindByConversationId(ctx context.Context, conversationId int) ([]*entity.Member, error) {
 	var members []*entity.Member
 
 	err := mr.db.WithContext(ctx).Preload("User").Where("conversation_id = ?", conversationId).Find(&members).Error

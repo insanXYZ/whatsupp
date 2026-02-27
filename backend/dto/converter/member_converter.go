@@ -11,10 +11,11 @@ func MemberEntityToDto(member *entity.Member) *dto.Member {
 	}
 
 	return &dto.Member{
-		ID:           member.ID,
-		Role:         string(member.Role),
-		User:         UserEntityToDto(member.User),
-		Conversation: ConversationEntityToDto(member.Conversation),
+		ID:             member.ID,
+		Role:           string(member.Role),
+		ConversationId: member.ConversationID,
+		User:           UserEntityToDto(member.User),
+		Conversation:   ConversationEntityToDto(member.Conversation),
 	}
 }
 

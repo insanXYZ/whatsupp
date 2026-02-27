@@ -4,38 +4,42 @@ import {
   RowConversationChat,
 } from "@/dto/conversation-dto.ts";
 import { ItemGetMessageResponse } from "@/dto/message-dto";
+import { MemberEntity } from "@/dto/user-dto";
 import { ConnectIdb, WhatsuppIdbSchema } from "@/utils/indexdb";
 import { ToastError } from "@/utils/toast";
 import { IDBPDatabase } from "idb";
 import { useEffect, useRef } from "react";
 
 export const useIdb = () => {
-  const idbRef = useRef<IDBPDatabase<WhatsuppIdbSchema> | null>(null);
+  let dbPromise: Promise<IDBPDatabase<WhatsuppIdbSchema>> | null = null;
 
-  // const AddConversation = async (c: RowConversationChat) => { };
-
-  const AppendConversationsIdb = async (c: RowConversationChat[]) => {
-    const tx = idbRef.current?.transaction("conversations", "readwrite");
-    const store = tx?.objectStore("conversations");
-
-    for (const row of c) {
-      await store?.put(row);
+  const getIdb = async () => {
+    if (!dbPromise) {
+      dbPromise = ConnectIdb();
     }
 
-    await tx?.done;
+    return dbPromise;
   };
 
-  const AppendConversationIdb = async (c: RowConversationChat) => {
-    const tx = idbRef.current?.transaction("conversations", "readwrite");
+  // conversations
+  //
+  const AppendConversationsIdb = async (
+    conversations: RowConversationChat[],
+  ) => {
+    const db = await getIdb();
+    const tx = db.transaction("conversations", "readwrite");
     const store = tx?.objectStore("conversations");
 
-    store?.put(c);
+    await Promise.all(
+      conversations.map((conversation) => store!.put(conversation)),
+    );
 
     await tx?.done;
   };
 
   const SearchConversationsByNameIdb = async (name: string) => {
-    const tx = idbRef.current?.transaction("conversations");
+    const db = await getIdb();
+    const tx = db.transaction("conversations");
     const store = tx?.objectStore("conversations");
     let cursor = await store?.openCursor();
 
@@ -55,7 +59,8 @@ export const useIdb = () => {
   };
 
   const SearchGroupConversationsByNameIdb = async (name: string) => {
-    const tx = idbRef.current?.transaction("conversations");
+    const db = await getIdb();
+    const tx = db.transaction("conversations");
     const store = tx?.objectStore("conversations");
     let cursor = await store?.openCursor();
 
@@ -75,8 +80,39 @@ export const useIdb = () => {
     return res;
   };
 
+  const AppendConversationIdb = async (c: RowConversationChat) => {
+    const db = await getIdb();
+    const tx = db.transaction("conversations", "readwrite");
+    const store = tx?.objectStore("conversations");
+
+    store?.put(c);
+
+    await tx?.done;
+  };
+
+  const SearchConversationByIdIdb = async (id: number) => {
+    const db = await getIdb();
+    const conversations = await db.get("conversations", id);
+    return conversations;
+  };
+
+  const GetAllConversationsIdb = async () => {
+    const db = await getIdb();
+    const conversations = await db.getAll("conversations");
+    return conversations ? conversations : [];
+  };
+
+  const DeleteConversationIdb = async (conversationId: number) => {
+    const db = await getIdb();
+    const tx = db.transaction("conversations", "readwrite");
+    const store = tx?.objectStore("conversations");
+
+    await store?.delete(conversationId);
+  };
+
   const SearchPrivateConversationsByNameIdb = async (name: string) => {
-    const tx = idbRef.current?.transaction("conversations");
+    const db = await getIdb();
+    const tx = db.transaction("conversations");
     const store = tx?.objectStore("conversations");
     let cursor = await store?.openCursor();
 
@@ -96,33 +132,20 @@ export const useIdb = () => {
     return res;
   };
 
-  const SearchConversationByIdIdb = async (id: number) => {
-    const conversations = await idbRef.current?.get("conversations", id);
-    return conversations;
-  };
+  // messages
 
-  const GetAllConversationsIdb = async () => {
-    const conversations = await idbRef.current?.getAll("conversations");
-    return conversations ? conversations : [];
-  };
-  const ReplaceConversationsIdb = async (convs: RowConversationChat[]) => {
-    const tx = idbRef.current?.transaction("conversations", "readwrite");
-    const store = tx?.objectStore("conversations");
-
-    await store?.clear();
-
-    await Promise.all(convs.map((conv) => store?.put(conv)));
-  };
-
-  const DeleteConversationIdb = async (conversationId: number) => {
-    const tx = idbRef.current?.transaction("conversations", "readwrite");
-    const store = tx?.objectStore("conversations");
-
-    await store?.delete(conversationId);
+  const GetMessagesByConversationIdIdb = async (conversationId: number) => {
+    const db = await getIdb();
+    return await db.getAllFromIndex(
+      "messages",
+      "conversation_id",
+      conversationId,
+    );
   };
 
   const AppendMessagesIdb = async (messages: ItemGetMessageResponse[]) => {
-    const tx = idbRef.current?.transaction("messages", "readwrite");
+    const db = await getIdb();
+    const tx = db.transaction("messages", "readwrite");
     const store = tx?.objectStore("messages");
 
     for (const message of messages) {
@@ -131,14 +154,16 @@ export const useIdb = () => {
   };
 
   const AppendMessageIdb = async (message: ItemGetMessageResponse) => {
-    const tx = idbRef.current?.transaction("messages", "readwrite");
+    const db = await getIdb();
+    const tx = db.transaction("messages", "readwrite");
     const store = tx?.objectStore("messages");
 
     await store?.put(message);
   };
 
   const GetMessagesWithConversationId = async (conversationId: number) => {
-    const messages = await idbRef.current?.getFromIndex(
+    const db = await getIdb();
+    const messages = await db.getFromIndex(
       "messages",
       "conversation_id",
       conversationId,
@@ -146,18 +171,29 @@ export const useIdb = () => {
     return messages;
   };
 
-  useEffect(() => {
-    ConnectIdb()
-      .then((idb) => (idbRef.current = idb))
-      .catch(() => {
-        ToastError(
-          "Error connected IndexedDB",
-          "Please refresh this page, or if thats not help, you can send issues to https://github.com/insanXYZ/whatsupp/issues",
-        );
-      });
-  }, []);
+  // members
+
+  const AppendMembersIdb = async (members: MemberEntity[]) => {
+    const db = await getIdb();
+    const tx = db.transaction("members", "readwrite");
+    const store = tx?.objectStore("members");
+
+    await Promise.all(members.map((member) => store?.put(member)));
+
+    await tx?.done;
+  };
+
+  const GetMembersByConversationIdIdb = async (conversationId: number) => {
+    const db = await getIdb();
+    return await db.getAllFromIndex(
+      "members",
+      "conversation_id",
+      conversationId,
+    );
+  };
 
   return {
+    AppendMembersIdb,
     AppendConversationsIdb,
     AppendConversationIdb,
     AppendMessagesIdb,
@@ -168,7 +204,8 @@ export const useIdb = () => {
     SearchConversationByIdIdb,
     GetAllConversationsIdb,
     GetMessagesWithConversationId,
-    ReplaceConversationsIdb,
     DeleteConversationIdb,
+    GetMessagesByConversationIdIdb,
+    GetMembersByConversationIdIdb,
   };
 };

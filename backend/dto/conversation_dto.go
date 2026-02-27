@@ -16,11 +16,7 @@ type Conversation struct {
 	Messages         []Message `json:"messages,omitempty"`
 }
 
-type SearchConversationRequest struct {
-	Name string `query:"name"`
-}
-
-type SearchConversationResponse struct {
+type ConversationSummary struct {
 	ID               int    `json:"id,omitempty"`
 	Name             string `json:"name,omitempty"`
 	Image            string `json:"image,omitempty"`
@@ -30,12 +26,18 @@ type SearchConversationResponse struct {
 	HaveJoined       bool   `json:"have_joined"`
 }
 
+type SearchConversationRequest struct {
+	Name string `query:"name"`
+}
+
 type LoadRecentConversation struct {
-	*SearchConversationResponse
+	*ConversationSummary
 	Members []*Member `json:"members"`
 }
 
-type NewConversationResponse = SearchConversationResponse
+type SearchConversationResponse = ConversationSummary
+
+type NewConversationResponse = LoadRecentConversation
 
 type CreateGroupConversationRequest struct {
 	Name  string                `form:"name" validate:"required,min=3,max=25"`
@@ -60,4 +62,14 @@ type JoinGroupConversationRequest struct {
 
 type LeaveConversationResponse struct {
 	ConversationID int `json:"conversation_id,omitempty"`
+}
+
+type MemberLeaveConversationResponse struct {
+	ConversationId int `json:"conversation_id,omitempty"`
+	MemberId       int `json:"member_id,omitempty"`
+}
+
+type MemberJoinConversationResponse struct {
+	ConversationId int     `json:"conversation_id,omitempty"`
+	Member         *Member `json:"member,omitempty"`
 }

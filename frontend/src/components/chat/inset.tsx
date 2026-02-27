@@ -2,13 +2,12 @@ import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { SidebarInset, SidebarTrigger } from "../ui/sidebar";
 import { Separator } from "../ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { LoaderCircle, Paperclip, Send } from "lucide-react";
+import { LogOut, Paperclip, Send } from "lucide-react";
 import { ButtonLoading } from "../ui/button-loading";
 import { SendMessageRequest } from "@/dto/ws-dto";
 import {
   CONVERSATION_TYPE_GROUP,
   CONVERSATION_TYPE_PRIVATE,
-  CreateGroupConversationDto,
   EditGroupConversationDto,
   RowConversationChat,
 } from "@/dto/conversation-dto.ts";
@@ -17,18 +16,12 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
-import {
-  ContentType,
-  HttpMethod,
-  Mutation,
-  useQueryData,
-} from "@/utils/tanstack";
+import { ContentType, HttpMethod, Mutation } from "@/utils/tanstack";
 import z from "zod";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,7 +30,6 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { CropImageDialog } from "./sidebar";
 import { useAccount } from "@/hooks/use-account";
-import { MemberEntity } from "@/dto/user-dto";
 import { MEMBER_ROLE_ADMIN } from "@/dto/member-dto";
 
 type AppSidebarInsetProps = {
@@ -48,7 +40,7 @@ type AppSidebarInsetProps = {
 export const AppSidebarInset = ({ header, content }: AppSidebarInsetProps) => {
   return (
     <SidebarInset>
-      <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4">
+      <header className="bg-background sticky top-0 z-50 flex shrink-0 items-center gap-2 border-b p-4">
         <SidebarTrigger className="-ml-1" />
         <Separator
           orientation="vertical"
@@ -56,7 +48,7 @@ export const AppSidebarInset = ({ header, content }: AppSidebarInsetProps) => {
         />
         {header}
       </header>
-      <div className="relative flex flex-1 flex-col gap-4 p-4 ">{content}</div>
+      {content}
     </SidebarInset>
   );
 };
@@ -70,7 +62,15 @@ export const InsetHeaderConversationProfile = ({
 }: InsetHeaderConversationProps) => {
   const { user } = useAccount();
 
-  const { mutate, isPending, isSuccess } = Mutation(["editGroup"], true);
+  const { mutate: mutateEditGroup, isPending: isPendingEditGroup } = Mutation(
+    ["editGroup"],
+    true,
+  );
+
+  const { mutate: mutateLeaveGroup, isPending: isPendingLeaveGroup } = Mutation(
+    ["memberGroup"],
+    true,
+  );
 
   const [imageSrc, setImageSrc] = useState<string>();
   const [tempImage, setTempImage] = useState<string>();
@@ -97,11 +97,19 @@ export const InsetHeaderConversationProfile = ({
     }
     formData.append("name", data.name);
 
-    mutate({
+    mutateEditGroup({
       body: formData,
       method: HttpMethod.PUT,
       url: `/conversations/${conversation.id}`,
       contentType: ContentType.FORM,
+    });
+  };
+
+  const onClickLeaveGroup = () => {
+    mutateLeaveGroup({
+      body: null,
+      method: HttpMethod.PUT,
+      url: `/conversations/${conversation.conversation_id}/members/me_join`,
     });
   };
 
@@ -116,12 +124,6 @@ export const InsetHeaderConversationProfile = ({
       }
     }
   }, [conversation]);
-
-  useEffect(() => {
-    if (isSuccess) {
-      setFormDialogOpen(false);
-    }
-  }, [isSuccess]);
 
   useEffect(() => {
     return () => {
@@ -226,6 +228,17 @@ export const InsetHeaderConversationProfile = ({
                 )}
               />
 
+              <div className="flex justify-center">
+                <ButtonLoading
+                  isPending={isPendingLeaveGroup}
+                  onClick={onClickLeaveGroup}
+                  className="bg-red-600"
+                  type="button"
+                >
+                  <LogOut color="white" className="text-white" />
+                </ButtonLoading>
+              </div>
+
               <Controller
                 control={form.control}
                 name="name"
@@ -279,7 +292,7 @@ export const InsetHeaderConversationProfile = ({
                       </Button>
                     </DialogClose>
 
-                    <ButtonLoading type="submit" isPending={isPending}>
+                    <ButtonLoading type="submit" isPending={isPendingEditGroup}>
                       Update
                     </ButtonLoading>
                   </DialogFooter>
@@ -341,42 +354,48 @@ export const InsetChat = ({
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto pb-20 flex flex-col gap-4">
-        {messages?.map((v) =>
-          v.is_me ? (
-            <div key={v.id} className="flex justify-end">
-              <div className="bg-blue-200 flex items-end flex-col max-w-2/3 rounded p-2">
-                <div>{v.message}</div>
-              </div>
-            </div>
-          ) : (
-            <div key={v.id} className="flex gap-2 max-w-2/3">
-              {conversationDetail.conversation_type ===
-                CONVERSATION_TYPE_GROUP && (
-                  <Avatar>
-                    <AvatarImage src={v.user.image} className="bg-gray-profile" />
-                    <AvatarFallback>
-                      {v.user.name.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              <div className="flex justify-start">
-                <div className="bg-green-200 flex items-start flex-col rounded p-2">
-                  <div className="text-xs text-gray-800">
-                    {v.user.name}#{v.user.id}
-                  </div>
+      <div className="flex flex-1 flex-col gap-4 p-4 z-0 ">
+        <div className="flex-1 overflow-y-auto pb-20 flex flex-col gap-4">
+          {messages?.map((v) =>
+            v.is_me ? (
+              <div key={v.id} className="flex justify-end">
+                <div className="bg-blue-200 flex items-end flex-col max-w-2/3 rounded p-2">
                   <div>{v.message}</div>
                 </div>
               </div>
-            </div>
-          ),
-        )}
+            ) : (
+              <div key={v.id} className="flex gap-2 max-w-2/3">
+                {conversationDetail.conversation_type ===
+                  CONVERSATION_TYPE_GROUP && (
+                    <Avatar>
+                      <AvatarImage
+                        src={v.user.image}
+                        className="bg-gray-profile"
+                      />
+                      <AvatarFallback>
+                        {v.user.name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                <div className="flex justify-start">
+                  <div className="bg-green-200 flex items-start flex-col rounded p-2">
+                    <div className="text-xs text-gray-800">
+                      {v.user.name}#{v.user.id}
+                    </div>
+                    <div>{v.message}</div>
+                  </div>
+                </div>
+              </div>
+            ),
+          )}
+        </div>
       </div>
 
-      {conversationDetail.have_joined ? (
+      {conversationDetail.have_joined ||
+        conversationDetail.conversation_type == CONVERSATION_TYPE_PRIVATE ? (
         <form
           onSubmit={handleSubmit}
-          className="absolute flex items-center gap-5 bottom-0 left-0 right-0 bg-background border-t p-4"
+          className="sticky flex items-center gap-5 bottom-0 z-50 bg-background border-t p-4"
         >
           <Paperclip />
           <input

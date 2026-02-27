@@ -26,7 +26,7 @@ func ConversationEntityToLoadRecentConversationDto(conversation *entity.Conversa
 
 	isPrivate := conversation.ConversationType == entity.CONV_TYPE_PRIVATE
 
-	searchConversationResponse := &dto.SearchConversationResponse{
+	conversationSummary := &dto.ConversationSummary{
 		ID:               conversation.ID,
 		Name:             conversation.Name,
 		Bio:              conversation.Bio,
@@ -48,14 +48,14 @@ func ConversationEntityToLoadRecentConversationDto(conversation *entity.Conversa
 
 		userReceiver := receiver.User
 
-		searchConversationResponse.Name = userReceiver.Name
-		searchConversationResponse.Bio = userReceiver.Bio
-		searchConversationResponse.Image = userReceiver.Image
+		conversationSummary.Name = userReceiver.Name
+		conversationSummary.Bio = userReceiver.Bio
+		conversationSummary.Image = userReceiver.Image
 	}
 
 	recentConversation := &dto.LoadRecentConversation{
-		SearchConversationResponse: searchConversationResponse,
-		Members:                    MemberEntitiesToDto(conversation.Members),
+		ConversationSummary: conversationSummary,
+		Members:             MemberEntitiesToDto(conversation.Members),
 	}
 
 	return recentConversation

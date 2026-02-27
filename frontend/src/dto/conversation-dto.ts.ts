@@ -9,7 +9,7 @@ export interface RowConversationChat {
   conversation_type: string;
   conversation_id?: number;
   have_joined: boolean;
-  members: MemberEntity[];
+  members?: MemberEntity[];
 }
 
 export const CONVERSATION_TYPE_PRIVATE = "PRIVATE";

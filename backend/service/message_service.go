@@ -57,14 +57,11 @@ func (cs *MessageService) HandleUpgradeWs(ctx context.Context, claims *util.Clai
 
 	user, err := cs.userRepository.TakeById(ctx, userId)
 	if err != nil {
-		fmt.Println("error 1:", err.Error())
 		return err
 	}
 
 	ws, err := websocket.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
-
-		fmt.Println("error 2:", err.Error())
 		return err
 	}
 
@@ -230,13 +227,15 @@ func (ms *MessageService) handleIncomingMessage(
 		if isNewConversation {
 			// send to sender
 			err := hub.SendNewConversation(bc.Request.Target.ID, &dto.NewConversationResponse{
-				ID:               bc.Sender.ID,
-				Image:            bc.Sender.Image,
-				Name:             bc.Sender.Name,
-				Bio:              bc.Sender.Bio,
-				ConversationType: entity.CONV_TYPE_PRIVATE,
-				ConversationID:   &conversationId,
-				HaveJoined:       true,
+				ConversationSummary: &dto.ConversationSummary{
+					ID:               bc.Sender.ID,
+					Image:            bc.Sender.Image,
+					Name:             bc.Sender.Name,
+					Bio:              bc.Sender.Bio,
+					ConversationType: entity.CONV_TYPE_PRIVATE,
+					ConversationID:   &conversationId,
+					HaveJoined:       true,
+				},
 			})
 			if err != nil {
 				return err
@@ -252,13 +251,15 @@ func (ms *MessageService) handleIncomingMessage(
 			}
 
 			err = hub.SendNewConversation(bc.Sender.ID, &dto.NewConversationResponse{
-				ID:               receiver.ID,
-				Image:            receiver.Image,
-				Name:             receiver.Name,
-				Bio:              receiver.Bio,
-				ConversationType: entity.CONV_TYPE_PRIVATE,
-				ConversationID:   &conversationId,
-				HaveJoined:       true,
+				ConversationSummary: &dto.ConversationSummary{
+					ID:               receiver.ID,
+					Image:            receiver.Image,
+					Name:             receiver.Name,
+					Bio:              receiver.Bio,
+					ConversationType: entity.CONV_TYPE_PRIVATE,
+					ConversationID:   &conversationId,
+					HaveJoined:       true,
+				},
 			})
 
 			if err != nil {

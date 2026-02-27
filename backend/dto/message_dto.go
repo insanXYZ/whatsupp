@@ -17,10 +17,12 @@ type eventMessageWs string
 type targetSendMessage string
 
 const (
-	EVENT_SEND_MESSAGE       eventMessageWs = "SEND_MESSAGE"
-	EVENT_NEW_MESSAGE        eventMessageWs = "NEW_MESSAGE"
-	EVENT_NEW_CONVERSATION   eventMessageWs = "NEW_CONVERSATION"
-	EVENT_LEAVE_CONVERSATION eventMessageWs = "LEAVE_CONVERSATION"
+	EVENT_SEND_MESSAGE              eventMessageWs = "SEND_MESSAGE"
+	EVENT_NEW_MESSAGE               eventMessageWs = "NEW_MESSAGE"
+	EVENT_NEW_CONVERSATION          eventMessageWs = "NEW_CONVERSATION"
+	EVENT_MEMBER_JOIN_CONVERSATION  eventMessageWs = "MEMBER_JOIN_CONVERSATION"
+	EVENT_LEAVE_CONVERSATION        eventMessageWs = "LEAVE_CONVERSATION"
+	EVENT_MEMBER_LEAVE_CONVERSATION eventMessageWs = "MEMBER_LEAVE_CONVERSATION"
 )
 
 const (

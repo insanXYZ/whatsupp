@@ -1,9 +1,13 @@
 import {
   EVENT_LEAVE_CONVERSATION,
+  EVENT_MEMBER_JOIN_CONVERSATION,
+  EVENT_MEMBER_LEAVE_CONVERSATION,
   EVENT_NEW_CONVERSATION,
   EVENT_NEW_MESSAGE,
   EventWs,
   LeaveConversationResponse,
+  MemberJoinConversationResponse,
+  MemberLeaveConversationResponse,
   NewConversationResponse,
   NewMessageResponse,
 } from "@/dto/ws-dto";
@@ -14,12 +18,16 @@ type useChatSocketProps = {
   onNewMessage: (data: NewMessageResponse) => void;
   onNewConversation: (data: NewConversationResponse) => void;
   onLeaveConversation: (data: LeaveConversationResponse) => void;
+  onMemberLeaveConversation: (data: MemberLeaveConversationResponse) => void;
+  onMemberJoinConversation: (data: MemberJoinConversationResponse) => void;
 };
 
 export function useChatSocket({
   onNewMessage,
   onNewConversation,
   onLeaveConversation,
+  onMemberJoinConversation,
+  onMemberLeaveConversation,
 }: useChatSocketProps) {
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -27,11 +35,15 @@ export function useChatSocket({
   const onNewMessageRef = useRef(onNewMessage);
   const onNewConversationRef = useRef(onNewConversation);
   const onLeaveConversationRef = useRef(onLeaveConversation);
+  const onMemberLeaveConversationRef = useRef(onMemberLeaveConversation);
+  const onMemberJoinConversationRef = useRef(onMemberJoinConversation);
 
   useEffect(() => {
     onNewMessageRef.current = onNewMessage;
     onNewConversationRef.current = onNewConversation;
     onLeaveConversationRef.current = onLeaveConversation;
+    onMemberLeaveConversationRef.current = onMemberLeaveConversation;
+    onMemberJoinConversationRef.current = onMemberJoinConversation;
   });
 
   useEffect(() => {
@@ -53,6 +65,16 @@ export function useChatSocket({
           case EVENT_LEAVE_CONVERSATION:
             onLeaveConversationRef.current(
               event.data as LeaveConversationResponse,
+            );
+            break;
+          case EVENT_MEMBER_LEAVE_CONVERSATION:
+            onMemberLeaveConversationRef.current(
+              event.data as MemberLeaveConversationResponse,
+            );
+            break;
+          case EVENT_MEMBER_JOIN_CONVERSATION:
+            onMemberJoinConversationRef.current(
+              event.data as MemberJoinConversationResponse,
             );
             break;
         }

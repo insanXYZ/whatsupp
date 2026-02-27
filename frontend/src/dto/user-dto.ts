@@ -11,6 +11,7 @@ export type GetMeResponse = UserEntity;
 export interface MemberEntity {
   id: number;
   role: string;
+  conversation_id: number;
   user: UserEntity;
 }
 

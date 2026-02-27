@@ -65,12 +65,12 @@ func (cc *ConversationController) CreateGroupConversation(c *echo.Context) error
 		req.Image = file
 	}
 
-	newConversation, err := cc.conversationService.HandleCreateGroupConversation(ctx, req, claims)
+	err = cc.conversationService.HandleCreateGroupConversation(ctx, req, claims)
 	if err != nil {
 		return util.ResponseErr(c, message.ERR_CREATE_GROUP_CONVERSATION, err)
 	}
 
-	return util.ResponseOk(c, message.SUCCESS_CREATE_GROUP_CONVERSATION, converter.ConversationEntityToDto(newConversation))
+	return util.ResponseOk(c, message.SUCCESS_CREATE_GROUP_CONVERSATION, nil)
 
 }
 

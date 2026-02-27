@@ -11,11 +11,12 @@ func MessageEntityToDto(message *entity.Message) *dto.Message {
 	}
 
 	return &dto.Message{
-		ID:           message.ID,
-		Message:      message.Message,
-		CreatedAt:    message.CreatedAt,
-		Conversation: ConversationEntityToDto(message.Conversation),
-		User:         UserEntityToDto(message.User),
+		ID:             message.ID,
+		Message:        message.Message,
+		ConversationID: message.ConversationID,
+		CreatedAt:      message.CreatedAt,
+		Conversation:   ConversationEntityToDto(message.Conversation),
+		User:           UserEntityToDto(message.User),
 	}
 }
 
